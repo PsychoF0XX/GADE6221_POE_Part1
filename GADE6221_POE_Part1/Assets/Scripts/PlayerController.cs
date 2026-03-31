@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         targetX = LaneToX(currentLane);
+        baseSpeed = forwardSpeed;
     }
 
     private void Update()
@@ -35,6 +36,8 @@ public class PlayerController : MonoBehaviour
         if (isDead) return;
         HandleLaneInput();
         HandleJumpInput();
+
+        Debug.Log($"Speed: {forwardSpeed}");
     }
 
     private void FixedUpdate()
