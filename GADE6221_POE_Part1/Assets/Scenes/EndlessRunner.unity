@@ -1466,57 +1466,6 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!1 &913345578
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 913345580}
-  - component: {fileID: 913345579}
-  m_Layer: 0
-  m_Name: _PickupManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &913345579
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 913345578}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a50d5489ad79934db68d366cedeac3b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PickupManager
-  speedBoostDuration: 10
-  shieldDuration: 5
-  magnetDuration: 8
-  speedBoostMultiplier: 1.5
-  pickupHUDPanel: {fileID: 957692581}
-  pickupLabel: {fileID: 1750906241}
-  pickupTimerBar: {fileID: 1745265917}
---- !u!4 &913345580
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 913345578}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -674.21985, y: 0.00002, z: 6377.2354}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &929539362
 GameObject:
   m_ObjectHideFlags: 0
@@ -1679,7 +1628,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe97884e73187b848a9ed6b05fa0afef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
-  sectionPrefabs: []
+  sectionPrefabs:
+  - {fileID: 506910971839600648, guid: b5a938298b5e717449653c94f5a31af3, type: 3}
+  - {fileID: 5899661028473089003, guid: d100ffda89e0bb741b73f5ff5d1ba704, type: 3}
+  - {fileID: 5899661028473089003, guid: c70599f3701817e44ab6dc5ad062d2fc, type: 3}
   sectionLength: 30
   sectionsAhead: 5
   destroyDistBehind: 35
@@ -1882,7 +1834,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cd2ae54cd8d8f847acacc8d2d52e40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleSpawner
-  obstaclePrefabs: []
+  obstaclePrefabs:
+  - {fileID: 3114338236486436639, guid: 6906550745c39354ab9816d7bf0e215a, type: 3}
+  - {fileID: 8280329921478419446, guid: b10412d4b722d3046ad73707bca7fd73, type: 3}
+  - {fileID: 8280329921478419446, guid: 95187fa10cf176444b5d2b06429f55db, type: 3}
   spawnInterval: 2
   spawnDistAhead: 40
   destroyDistBehind: 15
@@ -1954,9 +1909,9 @@ MonoBehaviour:
   shieldDuration: 5
   magnetDuration: 8
   speedBoostMultiplier: 1.5
-  pickupHUDPanel: {fileID: 0}
-  pickupLabel: {fileID: 0}
-  pickupTimerBar: {fileID: 0}
+  pickupHUDPanel: {fileID: 957692581}
+  pickupLabel: {fileID: 1750906241}
+  pickupTimerBar: {fileID: 1745265917}
 --- !u!4 &1238783695
 Transform:
   m_ObjectHideFlags: 0
@@ -2758,7 +2713,6 @@ SceneRoots:
   - {fileID: 667974042}
   - {fileID: 947548272}
   - {fileID: 1238783695}
-  - {fileID: 913345580}
   - {fileID: 1018458157}
   - {fileID: 1555332547}
   - {fileID: 305806995}
