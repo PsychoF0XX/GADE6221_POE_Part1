@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2764421074136453513}
   - component: {fileID: 6478365392452147195}
   - component: {fileID: 7587227003977054203}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Ground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -27,13 +27,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 506910971839600648}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.42935, y: 0, z: -0.1932}
-  m_LocalScale: {x: 5, y: 1, z: 1}
+  m_LocalRotation: {x: -0, y: 0.70710707, z: -0, w: 0.70710653}
+  m_LocalPosition: {x: 1.4294, y: 0, z: -0.1932}
+  m_LocalScale: {x: 11.191999, y: 1, z: 3.8495}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!33 &2764421074136453513
 MeshFilter:
   m_ObjectHideFlags: 0
