@@ -3,7 +3,6 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 
-
 public class PickupManager : MonoBehaviour
 {
     public static PickupManager Instance { get; private set; }
@@ -17,7 +16,7 @@ public class PickupManager : MonoBehaviour
     [SerializeField] private float speedBoostMultiplier = 1.5f;
 
     [Header("HUD (optional)")]
-    [SerializeField] private GameObject pickupHUDPanel;   // hide when no pickup active
+    [SerializeField] private GameObject pickupHUDPanel;
     [SerializeField] private TMP_Text pickupLabel;
     [SerializeField] private Image pickupTimerBar;   // set Image type to Filled
 
@@ -25,6 +24,7 @@ public class PickupManager : MonoBehaviour
     public bool IsMagnetActive { get; private set; }
 
     private Coroutine activeCoroutine;
+    private Coroutine flashCoroutine;
     private PlayerController player;
 
     private void Awake()
@@ -43,7 +43,21 @@ public class PickupManager : MonoBehaviour
 
     public void ActivatePickup(PickupType type)
     {
-        // Cancel any currently running pickup
+        // Instant pickups — apply immediately, don't cancel any active timed effect
+        if (type == PickupType.Health)
+        {
+            GameManager.Instance?.AddLife();
+            ShowFlash("HEALTH +1");
+            return;
+        }
+        if (type == PickupType.Score)
+        {
+            GameManager.Instance?.AddScore(5);
+            ShowFlash("SCORE +5");
+            return;
+        }
+
+        // Timed pickups — cancel any running timed effect first
         if (activeCoroutine != null)
         {
             StopCoroutine(activeCoroutine);
@@ -71,9 +85,35 @@ public class PickupManager : MonoBehaviour
         }
     }
 
-    private IEnumerator TimedEffect(float duration,
-                                    System.Action onActivate,
-                                    System.Action onDeactivate)
+    private void ShowFlash(string message)
+    {
+        if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+        flashCoroutine = StartCoroutine(FlashLabel(message));
+    }
+
+    private IEnumerator FlashLabel(string message)
+    {
+        bool panelWasActive = pickupHUDPanel != null && pickupHUDPanel.activeSelf;
+        string previousLabel = pickupLabel != null ? pickupLabel.text : "";
+
+        if (pickupLabel != null) pickupLabel.text = message;
+        if (!panelWasActive)
+        {
+            if (pickupTimerBar != null) pickupTimerBar.fillAmount = 0f;
+            pickupHUDPanel?.SetActive(true);
+        }
+
+        yield return new WaitForSeconds(1.5f);
+
+        if (panelWasActive)
+            if (pickupLabel != null) pickupLabel.text = previousLabel;
+        else
+            pickupHUDPanel?.SetActive(false);
+
+        flashCoroutine = null;
+    }
+
+    private IEnumerator TimedEffect(float duration, System.Action onActivate, System.Action onDeactivate)
     {
         onActivate?.Invoke();
 
@@ -81,11 +121,8 @@ public class PickupManager : MonoBehaviour
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-
-            // Update timer bar fill
             if (pickupTimerBar != null)
                 pickupTimerBar.fillAmount = 1f - (elapsed / duration);
-
             yield return null;
         }
 
@@ -93,16 +130,9 @@ public class PickupManager : MonoBehaviour
         pickupHUDPanel?.SetActive(false);
         activeCoroutine = null;
     }
-    private void ApplySpeedBoost()
-    {
-        // Directly modify the player's speed field via a public method
-        player?.SetSpeedMultiplier(speedBoostMultiplier);
-    }
 
-    private void RemoveSpeedBoost()
-    {
-        player?.ResetSpeed();
-    }
+    private void ApplySpeedBoost() => player?.SetSpeedMultiplier(speedBoostMultiplier);
+    private void RemoveSpeedBoost() => player?.ResetSpeed();
 
     private void ApplyShield() => IsShieldActive = true;
     private void RemoveShield() => IsShieldActive = false;

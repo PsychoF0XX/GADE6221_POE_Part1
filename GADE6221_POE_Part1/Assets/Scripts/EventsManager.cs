@@ -57,5 +57,7 @@ public enum PickupType
 {
     SpeedBoost,
     Shield,
-    Magnet
+    Magnet,
+    Health,
+    Score
 }

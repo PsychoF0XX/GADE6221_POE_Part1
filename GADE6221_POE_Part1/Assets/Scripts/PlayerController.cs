@@ -1,4 +1,5 @@
 
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -6,10 +7,14 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Lane Settings")]
     [SerializeField] private float laneWidth = 3f;
-    [SerializeField] private float laneSwitchSpeed = 10f;   // lerp speed
+    [SerializeField] private float laneSwitchSpeed = 10f;
 
     [Header("Forward Speed")]
-    [SerializeField] private float forwardSpeed = 10f;
+    [SerializeField] private float forwardSpeed = 20f;
+    [SerializeField] private float speedRange = 60f;       // maxSpeed = forwardSpeed + speedRange
+    [SerializeField] private float speedRampRate = 0.4f;   // units/sec added to base speed over time
+
+    private float maxSpeed;
 
     [Header("Jump")]
     [SerializeField] private float jumpForce = 6f;
@@ -20,6 +25,10 @@ public class PlayerController : MonoBehaviour
     private float targetX;
     private bool isGrounded = true;
     private bool isDead = false;
+    private bool isInvincible = false;
+    private bool isSpeedBoosted = false;
+    private float baseSpeed;
+    private float currentMultiplier = 1f;
 
     private float LaneToX(int lane) => (lane - 1) * laneWidth;
 
@@ -29,6 +38,7 @@ public class PlayerController : MonoBehaviour
         rb.freezeRotation = true;
         targetX = LaneToX(currentLane);
         baseSpeed = forwardSpeed;
+        maxSpeed = forwardSpeed + speedRange;
     }
 
     private void Update()
@@ -36,17 +46,25 @@ public class PlayerController : MonoBehaviour
         if (isDead) return;
         HandleLaneInput();
         HandleJumpInput();
-
-        Debug.Log($"Speed: {forwardSpeed}");
     }
 
     private void FixedUpdate()
     {
         if (isDead) return;
+        RampSpeed();
         MoveForward();
         SmoothLaneSwitch();
         CheckGrounded();
     }
+
+    private void RampSpeed()
+    {
+        // Always ramp baseSpeed — even during a boost
+        baseSpeed = Mathf.Min(baseSpeed + speedRampRate * Time.fixedDeltaTime, maxSpeed);
+        // forwardSpeed always reflects baseSpeed * current multiplier (1x when no boost)
+        forwardSpeed = baseSpeed * currentMultiplier;
+    }
+
     private void HandleLaneInput()
     {
         if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
@@ -91,19 +109,36 @@ public class PlayerController : MonoBehaviour
         isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.6f, groundLayer);
     }
 
-    private float baseSpeed;
-
     public void SetSpeedMultiplier(float multiplier)
     {
-        baseSpeed = forwardSpeed;
-        forwardSpeed = forwardSpeed * multiplier;
+        isSpeedBoosted = true;
+        currentMultiplier = multiplier;
     }
 
     public void ResetSpeed()
     {
-        forwardSpeed = baseSpeed;
+        isSpeedBoosted = false;
+        currentMultiplier = 1f;
     }
 
+    // Called by GameManager when all lives are lost
+    public void TriggerDeath()
+    {
+        isDead = true;
+    }
+
+    // Called by GameManager when player takes damage but still has lives remaining
+    public void StartInvincibility(float duration)
+    {
+        StartCoroutine(InvincibilityRoutine(duration));
+    }
+
+    private IEnumerator InvincibilityRoutine(float duration)
+    {
+        isInvincible = true;
+        yield return new WaitForSeconds(duration);
+        isInvincible = false;
+    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -111,12 +146,9 @@ public class PlayerController : MonoBehaviour
 
         if (other.CompareTag("Obstacle"))
         {
-            // Check if shield pickup is currently protecting the player
-            if (PickupManager.Instance != null && PickupManager.Instance.IsShieldActive)
-                return;
-
-            isDead = true;
-            GameManager.Instance?.OnPlayerDied();
+            if (PickupManager.Instance != null && PickupManager.Instance.IsShieldActive) return;
+            if (isInvincible) return;
+            GameManager.Instance?.TakeDamage();
         }
         else if (other.CompareTag("Pickup"))
         {
