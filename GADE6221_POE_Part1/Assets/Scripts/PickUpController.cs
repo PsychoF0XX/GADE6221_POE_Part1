@@ -13,6 +13,9 @@ public class PickupController : MonoBehaviour
     [SerializeField] private float magnetSpeed = 20f;
 
     private Transform playerTransform;
+    private bool isPoisoned = false;
+    private int registeredLane = -1;
+    private float registeredZ = 0f;
 
     private void Start()
     {
@@ -23,13 +26,14 @@ public class PickupController : MonoBehaviour
 
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null) playerTransform = player.transform;
+
+        transform.rotation = Quaternion.Euler(0f, 0f, -60f);
     }
 
     private void Update()
     {
-        transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
+        transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f, Space.Self);
 
-        // When magnet is active, pull this pickup toward the player regardless of lane
         if (playerTransform != null
             && PickupManager.Instance != null
             && PickupManager.Instance.IsMagnetActive)
@@ -45,10 +49,33 @@ public class PickupController : MonoBehaviour
         }
     }
 
+    // Called by PickupSpawner after instantiation so OnDestroy can release the registry slot
+    public void RegisterSlot(int lane, float z)
+    {
+        registeredLane = lane;
+        registeredZ = z;
+    }
+
+    public void Poison()
+    {
+        isPoisoned = true;
+        Renderer rend = GetComponentInChildren<Renderer>();
+        if (rend != null) rend.material.color = new Color(0.55f, 0f, 1f);
+    }
+
     public void Collect()
     {
-        PickupManager.Instance?.ActivatePickup(pickupType);
+        if (isPoisoned)
+            GameManager.Instance?.TakeDamage();
+        else
+            PickupManager.Instance?.ActivatePickup(pickupType);
         Destroy(gameObject);
+    }
+
+    private void OnDestroy()
+    {
+        if (registeredLane >= 0)
+            SpawnRegistry.Release(registeredLane, registeredZ);
     }
 
     private void OnTriggerEnter(Collider other)

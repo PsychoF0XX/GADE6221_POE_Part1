@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Pickup
   - Obstacle
+  - PoisonedObstacle
   layers:
   - Default
   - TransparentFX

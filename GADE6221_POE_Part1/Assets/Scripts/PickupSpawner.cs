@@ -18,13 +18,28 @@ public class PickupSpawner : MonoBehaviour
     [SerializeField] private float laneWidth = 3f;
     [SerializeField] private int totalLanes = 3;
 
+    [Header("Boss Phase")]
+    [SerializeField] private int poisonEveryN = 5;
+
+    // Set by BossSpawner when the drone phase begins/ends
+    private bool _bossActive = false;
+    public bool BossActive
+    {
+        get => _bossActive;
+        set { if (value != _bossActive) { _bossActive = value; poisonCounter = 0; } }
+    }
+
     private Transform playerTransform;
+    private ObstacleSpawner obstacleSpawner;
     private List<GameObject> activePickups = new List<GameObject>();
+    private int poisonCounter = 0;
 
     private void Start()
     {
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null) playerTransform = player.transform;
+
+        obstacleSpawner = FindFirstObjectByType<ObstacleSpawner>();
     }
 
     private void Update()
@@ -40,8 +55,8 @@ public class PickupSpawner : MonoBehaviour
         float spawnZ = playerTransform.position.z + spawnDistAhead;
         float spawnY = playerTransform.position.y + spawnHeight;
 
-        // Try lanes in random order until a clear one is found
-        List<int> lanes = new List<int> { 0, 1, 2 };
+        List<int> lanes = new List<int>();
+        for (int i = 0; i < totalLanes; i++) lanes.Add(i);
         ShuffleList(lanes);
 
         foreach (int lane in lanes)
@@ -49,27 +64,51 @@ public class PickupSpawner : MonoBehaviour
             float xPos = (lane - 1) * laneWidth;
             Vector3 spawnPos = new Vector3(xPos, spawnY, spawnZ);
 
+            // SpawnRegistry blocks any lane/Z already claimed by an obstacle this frame
+            if (!SpawnRegistry.TryClaim(lane, spawnZ)) continue;
+
             if (IsPositionClear(spawnPos))
             {
                 GameObject prefab = pickupPrefabs[Random.Range(0, pickupPrefabs.Length)];
-                if (prefab == null) continue;
+                if (prefab == null) { SpawnRegistry.Release(lane, spawnZ); continue; }
 
                 GameObject pickup = Instantiate(prefab, spawnPos, Quaternion.identity);
+                PickupController pc = pickup.GetComponent<PickupController>();
+                pc?.RegisterSlot(lane, spawnZ);
+
+                if (_bossActive)
+                {
+                    poisonCounter++;
+                    if (poisonCounter >= poisonEveryN)
+                    {
+                        poisonCounter = 0;
+                        // Only poison if fewer than 2 obstacles share this row —
+                        // guarantees at least one safe unpoisoned lane exists
+                        int obstaclesInRow = obstacleSpawner != null
+                            ? obstacleSpawner.CountObstaclesAtZ(spawnZ)
+                            : 0;
+                        if (obstaclesInRow < 2)
+                            pc?.Poison();
+                    }
+                }
+
                 activePickups.Add(pickup);
                 return;
             }
+
+            SpawnRegistry.Release(lane, spawnZ);
         }
-        // All lanes occupied — skip this pickup cycle
     }
 
     private bool IsPositionClear(Vector3 position)
     {
+        if (obstacleSpawner != null && obstacleSpawner.IsObstacleNear(position, overlapCheckRadius))
+            return false;
+
         Collider[] hits = Physics.OverlapSphere(position, overlapCheckRadius);
         foreach (Collider hit in hits)
-        {
-            if (hit.CompareTag("Obstacle") || hit.CompareTag("Pickup"))
-                return false;
-        }
+            if (hit.CompareTag("Pickup")) return false;
+
         return true;
     }
 
@@ -88,11 +127,7 @@ public class PickupSpawner : MonoBehaviour
         float playerZ = playerTransform.position.z;
         for (int i = activePickups.Count - 1; i >= 0; i--)
         {
-            if (activePickups[i] == null)
-            {
-                activePickups.RemoveAt(i);
-                continue;
-            }
+            if (activePickups[i] == null) { activePickups.RemoveAt(i); continue; }
             if (playerZ - activePickups[i].transform.position.z > destroyDistBehind)
             {
                 Destroy(activePickups[i]);

@@ -26,7 +26,6 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded = true;
     private bool isDead = false;
     private bool isInvincible = false;
-    private bool isSpeedBoosted = false;
     private float baseSpeed;
     private float currentMultiplier = 1f;
 
@@ -111,13 +110,11 @@ public class PlayerController : MonoBehaviour
 
     public void SetSpeedMultiplier(float multiplier)
     {
-        isSpeedBoosted = true;
         currentMultiplier = multiplier;
     }
 
     public void ResetSpeed()
     {
-        isSpeedBoosted = false;
         currentMultiplier = 1f;
     }
 

@@ -16,10 +16,10 @@ public class ObstacleSpawner : MonoBehaviour
     [SerializeField] private float difficultyScaleRate = 0.015f;
 
     [Header("Spawn Precision")]
-    [SerializeField] private float minObstacleSpacing = 8f;    // min Z gap between wave rows
+    [SerializeField] private float minObstacleSpacing = 8f;
 
     [Header("Wave Settings")]
-    [SerializeField] [Range(0f, 1f)] private float doubleSpawnChance = 0.4f;  // chance of 2 obstacles per wave
+    [SerializeField] [Range(0f, 1f)] private float doubleSpawnChance = 0.4f;
 
     [Header("Pickup Ratio")]
     [SerializeField] private int obstaclesPerPickup = 3;
@@ -28,18 +28,22 @@ public class ObstacleSpawner : MonoBehaviour
     [SerializeField] private float laneWidth = 3f;
     [SerializeField] private int totalLanes = 3;
 
+
     private float spawnTimer = 0f;
     private int obstaclesSinceLastPickup = 0;
     private Transform playerTransform;
     private PickupSpawner pickupSpawner;
     private List<GameObject> activeObstacles = new List<GameObject>();
     private HashSet<GameObject> passedObstacles = new HashSet<GameObject>();
+    private Dictionary<GameObject, (int lane, float z)> obstacleSlots = new();
 
     private void Start()
     {
+        SpawnRegistry.Clear();
+
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null) playerTransform = player.transform;
-        pickupSpawner = FindObjectOfType<PickupSpawner>();
+        pickupSpawner = FindFirstObjectByType<PickupSpawner>();
     }
 
     private void Update()
@@ -63,22 +67,18 @@ public class ObstacleSpawner : MonoBehaviour
         if (obstaclePrefabs == null || obstaclePrefabs.Length == 0) return;
 
         float spawnZ = playerTransform.position.z + spawnDistAhead;
-
-        // Skip if another wave row already exists in this zone
         if (IsZoneOccupied(spawnZ)) return;
 
-        // 40% chance of 2 obstacles this wave (leaving 1 lane open), otherwise 1
         int waveSize = (Random.value < doubleSpawnChance) ? 2 : 1;
 
-        // Shuffle lanes so the blocked ones are random
         List<int> lanes = new List<int> { 0, 1, 2 };
         ShuffleList(lanes);
 
         int spawned = 0;
         for (int i = 0; i < lanes.Count && spawned < waveSize; i++)
         {
-            // Safety: always leave at least 1 lane free
             if (totalLanes - spawned <= 1) break;
+            if (!SpawnRegistry.TryClaim(lanes[i], spawnZ)) continue;
 
             SpawnObstacleAt(lanes[i], spawnZ);
             spawned++;
@@ -100,9 +100,10 @@ public class ObstacleSpawner : MonoBehaviour
         GameObject obs = Instantiate(prefab, spawnPos, Quaternion.identity);
         obs.tag = "Obstacle";
         activeObstacles.Add(obs);
+        obstacleSlots[obs] = (lane, spawnZ);
+
     }
 
-    // Returns true if any active obstacle is within minObstacleSpacing of this Z — prevents row overlap
     private bool IsZoneOccupied(float spawnZ)
     {
         foreach (GameObject obs in activeObstacles)
@@ -121,6 +122,29 @@ public class ObstacleSpawner : MonoBehaviour
             int j = Random.Range(0, i + 1);
             (list[i], list[j]) = (list[j], list[i]);
         }
+    }
+
+    public int CountObstaclesAtZ(float z, float tolerance = 4f)
+    {
+        int count = 0;
+        foreach (GameObject obs in activeObstacles)
+        {
+            if (obs == null) continue;
+            if (Mathf.Abs(obs.transform.position.z - z) < tolerance)
+                count++;
+        }
+        return count;
+    }
+
+    public bool IsObstacleNear(Vector3 position, float radius)
+    {
+        foreach (GameObject obs in activeObstacles)
+        {
+            if (obs == null) continue;
+            if (Vector3.Distance(obs.transform.position, position) < radius)
+                return true;
+        }
+        return false;
     }
 
     private void HandleObstacles()
@@ -142,6 +166,11 @@ public class ObstacleSpawner : MonoBehaviour
 
             if (playerZ - obsZ > destroyDistBehind)
             {
+                if (obstacleSlots.TryGetValue(obs, out var slot))
+                {
+                    SpawnRegistry.Release(slot.lane, slot.z);
+                    obstacleSlots.Remove(obs);
+                }
                 passedObstacles.Remove(obs);
                 Destroy(obs);
                 activeObstacles.RemoveAt(i);

@@ -24,6 +24,8 @@ public class GameManager : MonoBehaviour
     [Header("Scene")]
     [SerializeField] private string gameSceneName = "GameScene";
 
+    public int Score => score;
+
     private int score = 0;
     private int lives;
     private bool isGameOver = false;

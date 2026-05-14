@@ -18,13 +18,17 @@ public class PickupManager : MonoBehaviour
     [Header("HUD (optional)")]
     [SerializeField] private GameObject pickupHUDPanel;
     [SerializeField] private TMP_Text pickupLabel;
-    [SerializeField] private Image pickupTimerBar;   // set Image type to Filled
+    [SerializeField] private Image pickupTimerBar;
 
     public bool IsShieldActive { get; private set; }
     public bool IsMagnetActive { get; private set; }
 
-    private Coroutine activeCoroutine;
+    // Each pickup type runs its own independent coroutine
+    private Coroutine speedBoostCoroutine;
+    private Coroutine shieldCoroutine;
+    private Coroutine magnetCoroutine;
     private Coroutine flashCoroutine;
+
     private PlayerController player;
 
     private void Awake()
@@ -43,7 +47,7 @@ public class PickupManager : MonoBehaviour
 
     public void ActivatePickup(PickupType type)
     {
-        // Instant pickups — apply immediately, don't cancel any active timed effect
+        // Instant pickups — never cancel timed effects
         if (type == PickupType.Health)
         {
             GameManager.Instance?.AddLife();
@@ -57,30 +61,32 @@ public class PickupManager : MonoBehaviour
             return;
         }
 
-        // Timed pickups — cancel any running timed effect first
-        if (activeCoroutine != null)
-        {
-            StopCoroutine(activeCoroutine);
-            ResetAllEffects();
-        }
-
         pickupHUDPanel?.SetActive(true);
 
         switch (type)
         {
             case PickupType.SpeedBoost:
+                if (speedBoostCoroutine != null) { StopCoroutine(speedBoostCoroutine); RemoveSpeedBoost(); }
                 if (pickupLabel != null) pickupLabel.text = "SPEED BOOST";
-                activeCoroutine = StartCoroutine(TimedEffect(speedBoostDuration, ApplySpeedBoost, RemoveSpeedBoost));
+                speedBoostCoroutine = StartCoroutine(TimedEffect(
+                    speedBoostDuration, ApplySpeedBoost, RemoveSpeedBoost,
+                    () => speedBoostCoroutine = null));
                 break;
 
             case PickupType.Shield:
+                if (shieldCoroutine != null) { StopCoroutine(shieldCoroutine); RemoveShield(); }
                 if (pickupLabel != null) pickupLabel.text = "SHIELD";
-                activeCoroutine = StartCoroutine(TimedEffect(shieldDuration, ApplyShield, RemoveShield));
+                shieldCoroutine = StartCoroutine(TimedEffect(
+                    shieldDuration, ApplyShield, RemoveShield,
+                    () => shieldCoroutine = null));
                 break;
 
             case PickupType.Magnet:
+                if (magnetCoroutine != null) { StopCoroutine(magnetCoroutine); RemoveMagnet(); }
                 if (pickupLabel != null) pickupLabel.text = "MAGNET";
-                activeCoroutine = StartCoroutine(TimedEffect(magnetDuration, ApplyMagnet, RemoveMagnet));
+                magnetCoroutine = StartCoroutine(TimedEffect(
+                    magnetDuration, ApplyMagnet, RemoveMagnet,
+                    () => magnetCoroutine = null));
                 break;
         }
     }
@@ -106,14 +112,19 @@ public class PickupManager : MonoBehaviour
         yield return new WaitForSeconds(1.5f);
 
         if (panelWasActive)
+        {
             if (pickupLabel != null) pickupLabel.text = previousLabel;
+        }
         else
+        {
             pickupHUDPanel?.SetActive(false);
+        }
 
         flashCoroutine = null;
     }
 
-    private IEnumerator TimedEffect(float duration, System.Action onActivate, System.Action onDeactivate)
+    private IEnumerator TimedEffect(float duration, System.Action onActivate,
+                                    System.Action onDeactivate, System.Action onComplete)
     {
         onActivate?.Invoke();
 
@@ -127,8 +138,11 @@ public class PickupManager : MonoBehaviour
         }
 
         onDeactivate?.Invoke();
-        pickupHUDPanel?.SetActive(false);
-        activeCoroutine = null;
+        onComplete?.Invoke();
+
+        // Only hide panel if no other timed effect is still running
+        if (speedBoostCoroutine == null && shieldCoroutine == null && magnetCoroutine == null)
+            pickupHUDPanel?.SetActive(false);
     }
 
     private void ApplySpeedBoost() => player?.SetSpeedMultiplier(speedBoostMultiplier);
@@ -139,11 +153,4 @@ public class PickupManager : MonoBehaviour
 
     private void ApplyMagnet() => IsMagnetActive = true;
     private void RemoveMagnet() => IsMagnetActive = false;
-
-    private void ResetAllEffects()
-    {
-        RemoveSpeedBoost();
-        RemoveShield();
-        RemoveMagnet();
-    }
 }

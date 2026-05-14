@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &568714015574427075
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.46176228
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.34592
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.25913903
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 7.0198607
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 4.936047
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 8.364985
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.699975
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.1001749
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.699975
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.10017487
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -16.289
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      propertyPath: m_Name
+      value: CopDrone
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -2114688614142556296}
+  m_SourcePrefab: {fileID: 100100000, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+--- !u!1 &803069770912282770 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: cef2809ea268d5142881d67d6cc8e395, type: 3}
+  m_PrefabInstance: {fileID: 568714015574427075}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &-2114688614142556296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 803069770912282770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cab656a9086680d48aa1595d5aa16883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossController
+  followDistance: 12
+  heightOffset: 2.5
+  followLerpSpeed: 4
+  wanderRange: 5
+  wanderLerpSpeed: 1.5
+  wanderChangeMin: 2
+  wanderChangeMax: 4
+  projectilePrefab: {fileID: 8644898935444237670, guid: 156be85059d24884a812f44e672175f8, type: 3}
+  projectileSpeed: 16
+  shootDelay: 0.6
+  despawnRiseSpeed: 12
