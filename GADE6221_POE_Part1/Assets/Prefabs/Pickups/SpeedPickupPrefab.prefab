@@ -130,6 +130,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PickupController
   pickupType: 0
   rotationSpeed: 90
+  poisonMaterial: {fileID: 2100000, guid: 95f64704eda63ea42b9ebdd1921903d4, type: 2}
   magnetRange: 15
   magnetSpeed: 20
 --- !u!1001 &2059148227801392440

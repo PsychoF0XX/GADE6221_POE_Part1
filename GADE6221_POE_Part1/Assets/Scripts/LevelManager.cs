@@ -7,13 +7,17 @@ public class LevelManager : MonoBehaviour
     [SerializeField] private GameObject[] sectionPrefabs;
 
     [Header("Spawn Settings")]
-    [SerializeField] private float sectionLength = 30f;   // Z length of one terrain section
-    [SerializeField] private int sectionsAhead = 5;     // how many sections to keep spawned
-    [SerializeField] private float destroyDistBehind = 35f;  // destroy when this far behind player
+    [SerializeField] private float fallbackSectionLength = 30f;
+    [SerializeField] private int sectionsAhead = 5;
+
+    [Header("Destroy Settings")]
+    [SerializeField] private float destroyBufferBehind = 20f;  // how far past the section's END before destroying
 
     private Transform playerTransform;
     private float nextSpawnZ;
     private List<GameObject> activeSections = new List<GameObject>();
+    // Stores the world Z where each section's mesh actually ends
+    private Dictionary<GameObject, float> sectionEndZs = new Dictionary<GameObject, float>();
 
     private void Start()
     {
@@ -22,7 +26,6 @@ public class LevelManager : MonoBehaviour
 
         nextSpawnZ = playerTransform != null ? playerTransform.position.z : 0f;
 
-        // Pre-generate sections so the level is visible from the start
         for (int i = 0; i < sectionsAhead + 2; i++)
             SpawnNextSection();
     }
@@ -31,24 +34,33 @@ public class LevelManager : MonoBehaviour
     {
         if (playerTransform == null) return;
 
-        // Keep spawning sections far enough ahead
-        while (nextSpawnZ < playerTransform.position.z + sectionsAhead * sectionLength)
+        while (nextSpawnZ < playerTransform.position.z + sectionsAhead * fallbackSectionLength)
             SpawnNextSection();
 
         DestroyOldSections();
     }
-
 
     private void SpawnNextSection()
     {
         if (sectionPrefabs == null || sectionPrefabs.Length == 0) return;
 
         GameObject prefab = sectionPrefabs[Random.Range(0, sectionPrefabs.Length)];
-        Vector3 pos = new Vector3(0f, 0f, nextSpawnZ);
-        GameObject section = Instantiate(prefab, pos, Quaternion.identity);
+        // Instantiate at origin first so Awake runs and RoadTile can measure bounds
+        GameObject section = Instantiate(prefab, Vector3.zero, Quaternion.identity);
 
+        RoadTile tile = section.GetComponent<RoadTile>();
+        float length = tile != null ? tile.length : fallbackSectionLength;
+
+        // Correct for pivot offset so the mesh front edge sits exactly at nextSpawnZ
+        float spawnZ = tile != null ? nextSpawnZ - tile.startOffset : nextSpawnZ;
+        section.transform.position = new Vector3(0f, 0f, spawnZ);
+
+        // Record where this section's mesh actually ends in world space
+        float meshEndZ = nextSpawnZ + length;
+        sectionEndZs[section] = meshEndZ;
         activeSections.Add(section);
-        nextSpawnZ += sectionLength;
+
+        nextSpawnZ += length;
     }
 
     private void DestroyOldSections()
@@ -60,11 +72,11 @@ public class LevelManager : MonoBehaviour
             GameObject section = activeSections[i];
             if (section == null) { activeSections.RemoveAt(i); continue; }
 
-            // The end of this section is its Z position + section length
-            float sectionEndZ = section.transform.position.z + sectionLength;
-
-            if (playerZ - sectionEndZ > destroyDistBehind)
+            // Only destroy once the player is destroyBufferBehind past the section's END
+            float endZ = sectionEndZs.TryGetValue(section, out float ez) ? ez : section.transform.position.z + fallbackSectionLength;
+            if (playerZ - endZ > destroyBufferBehind)
             {
+                sectionEndZs.Remove(section);
                 Destroy(section);
                 activeSections.RemoveAt(i);
             }

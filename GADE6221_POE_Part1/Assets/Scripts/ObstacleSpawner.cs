@@ -28,6 +28,9 @@ public class ObstacleSpawner : MonoBehaviour
     [SerializeField] private float laneWidth = 3f;
     [SerializeField] private int totalLanes = 3;
 
+    [Header("Height")]
+    [SerializeField] private float spawnHeightOffset = -2f;  // offset below the drone player
+
 
     private float spawnTimer = 0f;
     private int obstaclesSinceLastPickup = 0;
@@ -75,6 +78,8 @@ public class ObstacleSpawner : MonoBehaviour
         ShuffleList(lanes);
 
         int spawned = 0;
+        bool triggerPickup = false;
+
         for (int i = 0; i < lanes.Count && spawned < waveSize; i++)
         {
             if (totalLanes - spawned <= 1) break;
@@ -87,15 +92,19 @@ public class ObstacleSpawner : MonoBehaviour
             if (obstaclesSinceLastPickup >= obstaclesPerPickup)
             {
                 obstaclesSinceLastPickup = 0;
-                pickupSpawner?.SpawnPickupNow();
+                triggerPickup = true;
             }
         }
+
+        // Spawn pickup AFTER all obstacles so CountObstaclesAtZ sees the full wave count
+        if (triggerPickup)
+            pickupSpawner?.SpawnPickupNow();
     }
 
     private void SpawnObstacleAt(int lane, float spawnZ)
     {
         float xPos = (lane - 1) * laneWidth;
-        Vector3 spawnPos = new Vector3(xPos, playerTransform.position.y, spawnZ);
+        Vector3 spawnPos = new Vector3(xPos, playerTransform.position.y + spawnHeightOffset, spawnZ);
         GameObject prefab = obstaclePrefabs[Random.Range(0, obstaclePrefabs.Length)];
         GameObject obs = Instantiate(prefab, spawnPos, Quaternion.identity);
         obs.tag = "Obstacle";

@@ -9,7 +9,7 @@ public class PickupSpawner : MonoBehaviour
     [Header("Spawn Settings")]
     [SerializeField] private float spawnDistAhead = 160f;
     [SerializeField] private float destroyDistBehind = 20f;
-    [SerializeField] private float spawnHeight = 1f;
+    [SerializeField] private float spawnHeightOffset = -1.5f;  // offset below the drone player
 
     [Header("Spawn Precision")]
     [SerializeField] private float overlapCheckRadius = 1.5f;
@@ -53,7 +53,7 @@ public class PickupSpawner : MonoBehaviour
         if (playerTransform == null || pickupPrefabs == null || pickupPrefabs.Length == 0) return;
 
         float spawnZ = playerTransform.position.z + spawnDistAhead;
-        float spawnY = playerTransform.position.y + spawnHeight;
+        float spawnY = playerTransform.position.y + spawnHeightOffset;
 
         List<int> lanes = new List<int>();
         for (int i = 0; i < totalLanes; i++) lanes.Add(i);

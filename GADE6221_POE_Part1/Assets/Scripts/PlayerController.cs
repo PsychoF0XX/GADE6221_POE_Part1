@@ -35,6 +35,7 @@ public class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
+        rb.useGravity = false;
         targetX = LaneToX(currentLane);
         baseSpeed = forwardSpeed;
         maxSpeed = forwardSpeed + speedRange;

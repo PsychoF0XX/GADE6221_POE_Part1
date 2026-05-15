@@ -283,6 +283,7 @@ GameObject:
   - component: {fileID: 7603506672006088657}
   - component: {fileID: 8072401584716299345}
   - component: {fileID: 881823332471931199}
+  - component: {fileID: 5499297034497941728}
   m_Layer: 6
   m_Name: Cube
   m_TagString: Untagged
@@ -362,6 +363,27 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &5499297034497941728
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3933829105490024206}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.24194597, y: 0.51940167, z: 0.0031890792}
+  m_Center: {x: 0.012320658, y: 0, z: 0}
 --- !u!1 &3974922401361023977
 GameObject:
   m_ObjectHideFlags: 0
@@ -1004,6 +1026,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 317888819989841694}
+  - component: {fileID: 1113034433187212136}
   m_Layer: 0
   m_Name: SmallRoad
   m_TagString: Untagged
@@ -1042,6 +1065,18 @@ Transform:
   - {fileID: 9194972389666795776}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1113034433187212136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6768710022291812390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c2c8aee54c48e44fbd6943abdaa6d19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoadTile
 --- !u!1 &6802313538035057434
 GameObject:
   m_ObjectHideFlags: 0

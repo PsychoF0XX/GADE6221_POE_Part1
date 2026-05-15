@@ -7,13 +7,15 @@ public class PickupController : MonoBehaviour
 
     [Header("Visual")]
     [SerializeField] private float rotationSpeed = 90f;
+    [SerializeField] private Material poisonMaterial;  // assign a purple material in Inspector
 
     [Header("Magnet Attraction")]
     [SerializeField] private float magnetRange = 15f;
-    [SerializeField] private float magnetSpeed = 20f;
+    [SerializeField] private float magnetSpeed = 50f;
 
     private Transform playerTransform;
     private bool isPoisoned = false;
+    private bool collected = false;
     private int registeredLane = -1;
     private float registeredZ = 0f;
 
@@ -34,7 +36,8 @@ public class PickupController : MonoBehaviour
     {
         transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f, Space.Self);
 
-        if (playerTransform != null
+        if (!isPoisoned
+            && playerTransform != null
             && PickupManager.Instance != null
             && PickupManager.Instance.IsMagnetActive)
         {
@@ -59,12 +62,35 @@ public class PickupController : MonoBehaviour
     public void Poison()
     {
         isPoisoned = true;
-        Renderer rend = GetComponentInChildren<Renderer>();
-        if (rend != null) rend.material.color = new Color(0.55f, 0f, 1f);
+
+        // Apply poison material to every renderer in the pickup (handles multi-mesh models)
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        foreach (Renderer rend in renderers)
+        {
+            if (poisonMaterial != null)
+            {
+                // Replace all material slots with the poison material
+                Material[] slots = new Material[rend.materials.Length];
+                for (int i = 0; i < slots.Length; i++) slots[i] = poisonMaterial;
+                rend.materials = slots;
+            }
+            else
+            {
+                // Fallback: enable emission for a purple glow visible over any texture
+                Material mat = rend.material;
+                Color purple = new Color(0.55f, 0f, 1f);
+                mat.EnableKeyword("_EMISSION");
+                if (mat.HasProperty("_EmissionColor"))
+                    mat.SetColor("_EmissionColor", purple * 2f);
+            }
+        }
     }
 
     public void Collect()
     {
+        if (collected) return;
+        collected = true;
+
         if (isPoisoned)
             GameManager.Instance?.TakeDamage();
         else
