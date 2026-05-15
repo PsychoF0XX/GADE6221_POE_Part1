@@ -7,14 +7,11 @@ public class PickupController : MonoBehaviour
 
     [Header("Visual")]
     [SerializeField] private float rotationSpeed = 90f;
-    [SerializeField] private ParticleSystem glowEffect;  // assign a particle system child in Inspector
+    [SerializeField] private Material poisonMaterial;  // assign your purple material in Inspector
 
     [Header("Magnet Attraction")]
     [SerializeField] private float magnetRange = 15f;
     [SerializeField] private float magnetSpeed = 50f;
-
-    private static readonly Color GlowGreen  = new Color(0f,   1f,   0.2f);
-    private static readonly Color GlowPurple = new Color(0.55f, 0f,  1f);
 
     private Transform playerTransform;
     private bool isPoisoned = false;
@@ -33,8 +30,6 @@ public class PickupController : MonoBehaviour
         if (player != null) playerTransform = player.transform;
 
         transform.rotation = Quaternion.Euler(0f, 0f, -60f);
-
-        SetGlowColour(GlowGreen);
     }
 
     private void Update()
@@ -66,7 +61,14 @@ public class PickupController : MonoBehaviour
     public void Poison()
     {
         isPoisoned = true;
-        SetGlowColour(GlowPurple);
+        if (poisonMaterial == null) return;
+
+        foreach (Renderer rend in GetComponentsInChildren<Renderer>())
+        {
+            Material[] slots = new Material[rend.materials.Length];
+            for (int i = 0; i < slots.Length; i++) slots[i] = poisonMaterial;
+            rend.materials = slots;
+        }
     }
 
     public void Collect()
@@ -91,13 +93,5 @@ public class PickupController : MonoBehaviour
     {
         if (other.CompareTag("Player"))
             Collect();
-    }
-
-    private void SetGlowColour(Color colour)
-    {
-        if (glowEffect == null) return;
-        var main = glowEffect.main;
-        main.startColor = colour;
-        if (!glowEffect.isPlaying) glowEffect.Play();
     }
 }

@@ -75,6 +75,7 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         lives--;
         RefreshHUD();
+        CameraShake.Instance?.Shake();
 
         if (lives <= 0)
         {
