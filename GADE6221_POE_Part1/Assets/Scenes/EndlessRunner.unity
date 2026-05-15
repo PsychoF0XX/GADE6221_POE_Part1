@@ -1768,11 +1768,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 31176786216018472, guid: ccf1b625ceedfd644a1cbc63810dd068, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -28.26
+      value: -31.08
       objectReference: {fileID: 0}
     - target: {fileID: 31176786216018472, guid: ccf1b625ceedfd644a1cbc63810dd068, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 13.317
+      value: 19.92
       objectReference: {fileID: 0}
     - target: {fileID: 31176786216018472, guid: ccf1b625ceedfd644a1cbc63810dd068, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2051,16 +2051,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleSpawner
   obstaclePrefabs:
-  - {fileID: 3114338236486436639, guid: 6906550745c39354ab9816d7bf0e215a, type: 3}
-  - {fileID: 8280329921478419446, guid: b10412d4b722d3046ad73707bca7fd73, type: 3}
-  - {fileID: 8280329921478419446, guid: 95187fa10cf176444b5d2b06429f55db, type: 3}
+  - {fileID: 7681300497219349937, guid: bb5b18b1e1efe844bbf4e3c361dd5895, type: 3}
+  - {fileID: 5706426564507567709, guid: 5f2b4b324836d4f45a1043f9ad859d53, type: 3}
+  - {fileID: 5706426564507567709, guid: 5f2b4b324836d4f45a1043f9ad859d53, type: 3}
   spawnInterval: 1
   spawnDistAhead: 160
   destroyDistBehind: 15
   minSpawnInterval: 0.5
   difficultyScaleRate: 0.015
   minObstacleSpacing: 5
-  doubleSpawnChance: 0.4
+  doubleSpawnChance: 0.2
   obstaclesPerPickup: 3
   laneWidth: 5
   totalLanes: 3
