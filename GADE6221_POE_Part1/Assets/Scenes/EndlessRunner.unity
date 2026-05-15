@@ -2053,7 +2053,7 @@ MonoBehaviour:
   obstaclePrefabs:
   - {fileID: 7681300497219349937, guid: bb5b18b1e1efe844bbf4e3c361dd5895, type: 3}
   - {fileID: 5706426564507567709, guid: 5f2b4b324836d4f45a1043f9ad859d53, type: 3}
-  - {fileID: 5706426564507567709, guid: 5f2b4b324836d4f45a1043f9ad859d53, type: 3}
+  - {fileID: 6703709150599980071, guid: 81e2860add0a9114f9a0d82d290e6670, type: 3}
   spawnInterval: 1
   spawnDistAhead: 160
   destroyDistBehind: 1000
