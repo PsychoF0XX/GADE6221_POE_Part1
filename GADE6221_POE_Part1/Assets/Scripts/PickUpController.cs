@@ -7,11 +7,14 @@ public class PickupController : MonoBehaviour
 
     [Header("Visual")]
     [SerializeField] private float rotationSpeed = 90f;
-    [SerializeField] private Material poisonMaterial;  // assign a purple material in Inspector
+    [SerializeField] private ParticleSystem glowEffect;  // assign a particle system child in Inspector
 
     [Header("Magnet Attraction")]
     [SerializeField] private float magnetRange = 15f;
     [SerializeField] private float magnetSpeed = 50f;
+
+    private static readonly Color GlowGreen  = new Color(0f,   1f,   0.2f);
+    private static readonly Color GlowPurple = new Color(0.55f, 0f,  1f);
 
     private Transform playerTransform;
     private bool isPoisoned = false;
@@ -30,6 +33,8 @@ public class PickupController : MonoBehaviour
         if (player != null) playerTransform = player.transform;
 
         transform.rotation = Quaternion.Euler(0f, 0f, -60f);
+
+        SetGlowColour(GlowGreen);
     }
 
     private void Update()
@@ -52,7 +57,6 @@ public class PickupController : MonoBehaviour
         }
     }
 
-    // Called by PickupSpawner after instantiation so OnDestroy can release the registry slot
     public void RegisterSlot(int lane, float z)
     {
         registeredLane = lane;
@@ -62,28 +66,7 @@ public class PickupController : MonoBehaviour
     public void Poison()
     {
         isPoisoned = true;
-
-        // Apply poison material to every renderer in the pickup (handles multi-mesh models)
-        Renderer[] renderers = GetComponentsInChildren<Renderer>();
-        foreach (Renderer rend in renderers)
-        {
-            if (poisonMaterial != null)
-            {
-                // Replace all material slots with the poison material
-                Material[] slots = new Material[rend.materials.Length];
-                for (int i = 0; i < slots.Length; i++) slots[i] = poisonMaterial;
-                rend.materials = slots;
-            }
-            else
-            {
-                // Fallback: enable emission for a purple glow visible over any texture
-                Material mat = rend.material;
-                Color purple = new Color(0.55f, 0f, 1f);
-                mat.EnableKeyword("_EMISSION");
-                if (mat.HasProperty("_EmissionColor"))
-                    mat.SetColor("_EmissionColor", purple * 2f);
-            }
-        }
+        SetGlowColour(GlowPurple);
     }
 
     public void Collect()
@@ -108,5 +91,13 @@ public class PickupController : MonoBehaviour
     {
         if (other.CompareTag("Player"))
             Collect();
+    }
+
+    private void SetGlowColour(Color colour)
+    {
+        if (glowEffect == null) return;
+        var main = glowEffect.main;
+        main.startColor = colour;
+        if (!glowEffect.isPlaying) glowEffect.Play();
     }
 }
