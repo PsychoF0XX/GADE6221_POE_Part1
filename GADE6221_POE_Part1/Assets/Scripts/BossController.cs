@@ -44,6 +44,7 @@ public class BossController : MonoBehaviour
     {
         if (isActive) return;
         isActive = true;
+        if (warningText != null) warningText.gameObject.SetActive(false);
         attackCoroutine = StartCoroutine(AttackLoop());
     }
 
