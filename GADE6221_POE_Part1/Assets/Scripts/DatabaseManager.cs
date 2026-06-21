@@ -25,24 +25,10 @@ public class DatabaseManager : MonoBehaviour
 
     private void Start()
     {
-        TestConnection();
+
     }
 
-    private void TestConnection()
-    {
-        try
-        {
-            using (var conn = new MySqlConnection(ConnectionString))
-            {
-                conn.Open();
-                Debug.Log("MySQL connected successfully!");
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError("MySQL connection failed: " + e.Message);
-        }
-    }
+    
 
     // Call this when the player submits their name on the game over screen
     public void SaveScore(string playerName, int score)

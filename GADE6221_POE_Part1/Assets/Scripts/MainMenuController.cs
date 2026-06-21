@@ -17,7 +17,7 @@ public class MainMenuController : MonoBehaviour
         if (highScoreText != null)
         {
             int best = HighScoreManager.Instance != null ? HighScoreManager.Instance.HighScore : PlayerPrefs.GetInt("HighScore", 0);
-            highScoreText.text = best > 0 ? "Best: " + best : "No record yet";
+            highScoreText.text = best > 0 ? "Best: " + best : "Your future high score";
         }
     }
 

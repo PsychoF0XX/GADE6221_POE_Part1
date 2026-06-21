@@ -20,9 +20,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpForce = 6f;
     [SerializeField] private LayerMask groundLayer;
 
-    [Header("Invincibility Flash")]
-    [SerializeField] private float flashInterval = 0.12f;
-
     private Rigidbody rb;
     private int currentLane = 1;          // 0 = left, 1 = centre, 2 = right
     private float targetX;
@@ -31,7 +28,6 @@ public class PlayerController : MonoBehaviour
     private bool isInvincible = false;
     private float baseSpeed;
     private float currentMultiplier = 1f;
-    private Renderer[] renderers;
 
     public int CurrentLane => currentLane;
 
@@ -49,7 +45,6 @@ public class PlayerController : MonoBehaviour
         baseSpeed = forwardSpeed;
         maxSpeed = forwardSpeed + speedRange;
 
-        renderers = GetComponentsInChildren<Renderer>();
     }
 
     private void Update()
@@ -133,7 +128,6 @@ public class PlayerController : MonoBehaviour
     {
         isDead = true;
         StopAllCoroutines();
-        SetRenderersVisible(true);
     }
 
     public void StartInvincibility(float duration)
@@ -145,25 +139,8 @@ public class PlayerController : MonoBehaviour
     private IEnumerator InvincibilityRoutine(float duration)
     {
         isInvincible = true;
-        float elapsed = 0f;
-        bool visible = true;
-
-        while (elapsed < duration)
-        {
-            visible = !visible;
-            SetRenderersVisible(visible);
-            yield return new WaitForSeconds(flashInterval);
-            elapsed += flashInterval;
-        }
-
+        yield return new WaitForSeconds(duration);
         isInvincible = false;
-        SetRenderersVisible(true);
-    }
-
-    private void SetRenderersVisible(bool visible)
-    {
-        foreach (Renderer r in renderers)
-            if (r != null) r.enabled = visible;
     }
 
     private void OnTriggerEnter(Collider other)

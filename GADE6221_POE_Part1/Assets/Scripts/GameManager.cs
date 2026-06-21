@@ -14,8 +14,6 @@ public class GameManager : MonoBehaviour
     [Header("Death Screen (set panel inactive by default)")]
     [SerializeField] private GameObject deathPanel;
     [SerializeField] private TMP_Text deathScoreText;
-    [SerializeField] private TMP_Text deathHighScoreText;
-    [SerializeField] private TMP_Text newHighScoreLabel;   // "NEW BEST!" label, optional
     [SerializeField] private PlayerNameInput playerNameInput; // shows name prompt before death panel
 
     [Header("Pause Menu (set panel inactive by default)")]
@@ -50,7 +48,6 @@ public class GameManager : MonoBehaviour
         lives = maxLives;
         deathPanel?.SetActive(false);
         pausePanel?.SetActive(false);
-        newHighScoreLabel?.gameObject.SetActive(false);
 
         GameObject p = GameObject.FindWithTag("Player");
         if (p != null) playerController = p.GetComponent<PlayerController>();
@@ -129,18 +126,10 @@ public class GameManager : MonoBehaviour
         playerController?.TriggerDeath();
         Time.timeScale = 0f;
 
-        bool isNewBest = HighScoreManager.Instance != null && HighScoreManager.Instance.TrySetHighScore(score);
+        HighScoreManager.Instance?.TrySetHighScore(score);
 
         if (deathScoreText != null)
             deathScoreText.text = "Score: " + score;
-
-        if (deathHighScoreText != null)
-        {
-            int best = HighScoreManager.Instance != null ? HighScoreManager.Instance.HighScore : score;
-            deathHighScoreText.text = "Best: " + best;
-        }
-
-        newHighScoreLabel?.gameObject.SetActive(isNewBest);
 
         // If name input is set up, show it first — it will reveal the death panel after submit
         if (playerNameInput != null)
