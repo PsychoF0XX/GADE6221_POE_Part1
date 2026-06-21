@@ -66,9 +66,9 @@ public class PickupManager : MonoBehaviour
         GameObject p = GameObject.FindWithTag("Player");
         if (p != null) player = p.GetComponent<PlayerController>();
 
-        speedBoostRow?.SetActive(false);
-        shieldRow?.SetActive(false);
-        magnetRow?.SetActive(false);
+        SafeSetActive(speedBoostRow, false);
+        SafeSetActive(shieldRow, false);
+        SafeSetActive(magnetRow, false);
         pickupHUDPanel?.SetActive(false);
         flashLabel?.gameObject.SetActive(false);
     }
@@ -99,7 +99,7 @@ public class PickupManager : MonoBehaviour
                 {
                     speedBoostRemaining = speedBoostDuration;
                     player?.SetSpeedMultiplier(speedBoostMultiplier);
-                    speedBoostRow?.SetActive(true);
+                    SafeSetActive(speedBoostRow, true);
                     pickupHUDPanel?.SetActive(true);
                     if (pickupLabel != null) pickupLabel.text = "SPEED";
                     speedBoostCoroutine = StartCoroutine(SpeedBoostTick());
@@ -117,7 +117,7 @@ public class PickupManager : MonoBehaviour
                 {
                     shieldRemaining = shieldDuration;
                     IsShieldActive = true;
-                    shieldRow?.SetActive(true);
+                    SafeSetActive(shieldRow, true);
                     pickupHUDPanel?.SetActive(true);
                     if (pickupLabel != null) pickupLabel.text = "SHIELD";
                     shieldCoroutine = StartCoroutine(ShieldTick());
@@ -136,7 +136,7 @@ public class PickupManager : MonoBehaviour
                 {
                     magnetRemaining = magnetDuration;
                     IsMagnetActive = true;
-                    magnetRow?.SetActive(true);
+                    SafeSetActive(magnetRow, true);
                     pickupHUDPanel?.SetActive(true);
                     if (pickupLabel != null) pickupLabel.text = "MAGNET";
                     magnetCoroutine = StartCoroutine(MagnetTick());
@@ -156,7 +156,7 @@ public class PickupManager : MonoBehaviour
             yield return null;
         }
         player?.ResetSpeed();
-        speedBoostRow?.SetActive(false);
+        SafeSetActive(speedBoostRow, false);
         speedBoostCoroutine = null;
         HideLegacyPanelIfIdle();
     }
@@ -172,7 +172,7 @@ public class PickupManager : MonoBehaviour
             yield return null;
         }
         IsShieldActive = false;
-        shieldRow?.SetActive(false);
+        SafeSetActive(shieldRow, false);
         shieldCoroutine = null;
         HideLegacyPanelIfIdle();
     }
@@ -188,7 +188,7 @@ public class PickupManager : MonoBehaviour
             yield return null;
         }
         IsMagnetActive = false;
-        magnetRow?.SetActive(false);
+        SafeSetActive(magnetRow, false);
         magnetCoroutine = null;
         HideLegacyPanelIfIdle();
     }
@@ -197,6 +197,12 @@ public class PickupManager : MonoBehaviour
     {
         if (speedBoostCoroutine == null && shieldCoroutine == null && magnetCoroutine == null)
             pickupHUDPanel?.SetActive(false);
+    }
+
+    // Unity's == null handles both C# null and unassigned serialized fields
+    private static void SafeSetActive(GameObject go, bool active)
+    {
+        if (go != null) go.SetActive(active);
     }
 
     private void ShowFlash(string message)
