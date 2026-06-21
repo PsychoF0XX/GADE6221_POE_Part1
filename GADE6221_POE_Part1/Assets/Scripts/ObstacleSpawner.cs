@@ -190,7 +190,7 @@ public class ObstacleSpawner : MonoBehaviour
             if (obsZ < playerZ && !passedObstacles.Contains(obs))
             {
                 passedObstacles.Add(obs);
-                GameManager.Instance?.AddScore(1);
+                EventManager.Instance?.RaiseObstaclePassed();
             }
 
             if (playerZ - obsZ > destroyDistBehind)

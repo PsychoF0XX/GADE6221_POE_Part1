@@ -51,6 +51,7 @@ public class BossSpawner : MonoBehaviour
         if (droneObject != null) droneObject.SetActive(true);
         bossController?.Activate();
         if (pickupSpawner != null) pickupSpawner.BossActive = true;
+        EventManager.Instance?.RaiseBossSpawned(1);
         StartCoroutine(ShowAlert(
             "DRONE DETECTED!\n<size=75%>Dodge its attacks & beware POISONED pickups!\nReach 1000 points to escape.</size>"));
     }
@@ -62,6 +63,7 @@ public class BossSpawner : MonoBehaviour
         bossController?.Deactivate();
         if (droneObject != null) droneObject.SetActive(false);
         if (pickupSpawner != null) pickupSpawner.BossActive = false;
+        EventManager.Instance?.RaiseBossBeaten(1);
         StartCoroutine(ShowAlert("<size=90%>Drone lost! You escaped!</size>"));
     }
 

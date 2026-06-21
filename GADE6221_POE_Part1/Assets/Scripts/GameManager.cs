@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     [Header("HUD")]
     [SerializeField] private TMP_Text hudScoreText;
     [SerializeField] private TMP_Text hudLivesText;
+    [SerializeField] private TMP_Text hudLevelsText;   // optional — shows levels beaten
 
     [Header("Death Screen (set panel inactive by default)")]
     [SerializeField] private GameObject deathPanel;
@@ -28,8 +29,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private string mainMenuSceneName = "MainMenu";
 
     public int Score => score;
+    public int LevelsBeaten => levelsBeaten;
 
     private int score = 0;
+    private int levelsBeaten = 0;
     private int lives;
     private bool isGameOver = false;
     private bool isPaused = false;
@@ -51,6 +54,36 @@ public class GameManager : MonoBehaviour
         GameObject p = GameObject.FindWithTag("Player");
         if (p != null) playerController = p.GetComponent<PlayerController>();
 
+        // Subscribe to EventManager events
+        if (EventManager.Instance != null)
+        {
+            EventManager.Instance.OnObstaclePassed  += () => AddScore(1);
+            EventManager.Instance.OnPickupActivated += _ => AddScore(2);
+            EventManager.Instance.OnBossSpawned     += _ => { };   // hooked — extend later
+            EventManager.Instance.OnBossBeaten      += _ => AddScore(50);
+            EventManager.Instance.OnLevelCompleted  += OnLevelCompleted;
+            EventManager.Instance.OnPlayerDied      += TakeDamage;
+        }
+
+        RefreshHUD();
+    }
+
+    private void OnDestroy()
+    {
+        if (EventManager.Instance != null)
+        {
+            EventManager.Instance.OnObstaclePassed  -= () => AddScore(1);
+            EventManager.Instance.OnPickupActivated -= _ => AddScore(2);
+            EventManager.Instance.OnBossBeaten      -= _ => AddScore(50);
+            EventManager.Instance.OnLevelCompleted  -= OnLevelCompleted;
+            EventManager.Instance.OnPlayerDied      -= TakeDamage;
+        }
+    }
+
+    private void OnLevelCompleted()
+    {
+        levelsBeaten++;
+        AddScore(20);   // bonus score for completing a level
         RefreshHUD();
     }
 
@@ -116,6 +149,8 @@ public class GameManager : MonoBehaviour
             hudScoreText.text = "Score: " + score;
         if (hudLivesText != null)
             hudLivesText.text = "Lives: " + lives;
+        if (hudLevelsText != null)
+            hudLevelsText.text = "Levels: " + levelsBeaten;
     }
 
     private void TogglePause()

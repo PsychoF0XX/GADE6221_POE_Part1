@@ -1,23 +1,35 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Manages infinite terrain spawning across two distinct level types.
+// Level 1 prefabs and Level 2 prefabs are assigned separately in the Inspector.
+// The game always starts Level 1 → Level 2, then randomises from there.
 public class LevelManager : MonoBehaviour
 {
-    [Header("Terrain Section Prefabs (assign at least 3 in Inspector)")]
-    [SerializeField] private GameObject[] sectionPrefabs;
+    [Header("Level 1 Section Prefabs")]
+    [SerializeField] private GameObject[] level1Prefabs;
+
+    [Header("Level 2 Section Prefabs")]
+    [SerializeField] private GameObject[] level2Prefabs;
 
     [Header("Spawn Settings")]
     [SerializeField] private float fallbackSectionLength = 30f;
     [SerializeField] private int sectionsAhead = 5;
 
     [Header("Destroy Settings")]
-    [SerializeField] private float destroyBufferBehind = 20f;  // how far past the section's END before destroying
+    [SerializeField] private float destroyBufferBehind = 20f;
+
+    [Header("Level Length")]
+    [SerializeField] private int sectionsPerLevel = 10;   // how many sections before switching levels
 
     private Transform playerTransform;
     private float nextSpawnZ;
     private List<GameObject> activeSections = new List<GameObject>();
-    // Stores the world Z where each section's mesh actually ends
     private Dictionary<GameObject, float> sectionEndZs = new Dictionary<GameObject, float>();
+
+    private int currentLevel = 1;           // 1 or 2
+    private int sectionsSpawnedThisLevel = 0;
+    private bool pastInitialTwo = false;    // true once both level 1 and level 2 have run once
 
     private void Start()
     {
@@ -42,25 +54,53 @@ public class LevelManager : MonoBehaviour
 
     private void SpawnNextSection()
     {
-        if (sectionPrefabs == null || sectionPrefabs.Length == 0) return;
+        GameObject[] pool = currentLevel == 1 ? level1Prefabs : level2Prefabs;
+        if (pool == null || pool.Length == 0) return;
 
-        GameObject prefab = sectionPrefabs[Random.Range(0, sectionPrefabs.Length)];
-        // Instantiate at origin first so Awake runs and RoadTile can measure bounds
+        GameObject prefab = pool[Random.Range(0, pool.Length)];
         GameObject section = Instantiate(prefab, Vector3.zero, Quaternion.identity);
 
         RoadTile tile = section.GetComponent<RoadTile>();
         float length = tile != null ? tile.length : fallbackSectionLength;
-
-        // Correct for pivot offset so the mesh front edge sits exactly at nextSpawnZ
         float spawnZ = tile != null ? nextSpawnZ - tile.startOffset : nextSpawnZ;
         section.transform.position = new Vector3(0f, 0f, spawnZ);
 
-        // Record where this section's mesh actually ends in world space
         float meshEndZ = nextSpawnZ + length;
         sectionEndZs[section] = meshEndZ;
         activeSections.Add(section);
-
         nextSpawnZ += length;
+
+        sectionsSpawnedThisLevel++;
+        if (sectionsSpawnedThisLevel >= sectionsPerLevel)
+            AdvanceLevel();
+    }
+
+    private void AdvanceLevel()
+    {
+        sectionsSpawnedThisLevel = 0;
+
+        if (!pastInitialTwo)
+        {
+            // First pass: always go 1 → 2
+            if (currentLevel == 1)
+            {
+                currentLevel = 2;
+            }
+            else
+            {
+                // Finished level 2 for the first time — now randomise
+                pastInitialTwo = true;
+                currentLevel = Random.Range(0, 2) == 0 ? 1 : 2;
+            }
+        }
+        else
+        {
+            // Random pick after the initial two levels
+            currentLevel = Random.Range(0, 2) == 0 ? 1 : 2;
+        }
+
+        // Fire the event so GameManager can track levels beaten
+        EventManager.Instance?.RaiseLevelCompleted();
     }
 
     private void DestroyOldSections()
@@ -72,7 +112,6 @@ public class LevelManager : MonoBehaviour
             GameObject section = activeSections[i];
             if (section == null) { activeSections.RemoveAt(i); continue; }
 
-            // Only destroy once the player is destroyBufferBehind past the section's END
             float endZ = sectionEndZs.TryGetValue(section, out float ez) ? ez : section.transform.position.z + fallbackSectionLength;
             if (playerZ - endZ > destroyBufferBehind)
             {

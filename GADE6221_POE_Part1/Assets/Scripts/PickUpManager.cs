@@ -88,6 +88,7 @@ public class PickupManager : MonoBehaviour
                 return;
 
             case PickupType.SpeedBoost:
+                EventManager.Instance?.RaisePickupActivated(PickupType.SpeedBoost);
                 ShowFlash("SPEED BOOST");
                 if (speedBoostCoroutine != null)
                 {
@@ -106,6 +107,7 @@ public class PickupManager : MonoBehaviour
                 break;
 
             case PickupType.Shield:
+                EventManager.Instance?.RaisePickupActivated(PickupType.Shield);
                 ShowFlash("SHIELD");
                 if (shieldCoroutine != null)
                 {
@@ -123,6 +125,7 @@ public class PickupManager : MonoBehaviour
                 break;
 
             case PickupType.Magnet:
+                EventManager.Instance?.RaisePickupActivated(PickupType.Magnet);
                 ShowFlash("MAGNET");
                 if (magnetCoroutine != null)
                 {
