@@ -7,19 +7,20 @@ public class ObstacleSpawner : MonoBehaviour
     [SerializeField] private GameObject[] obstaclePrefabs;
 
     [Header("Spawn Settings")]
-    [SerializeField] private float spawnInterval = 1.2f;
+    [SerializeField] private float spawnInterval = 1.5f;
     [SerializeField] private float spawnDistAhead = 160f;
     [SerializeField] private float destroyDistBehind = 20f;
 
     [Header("Difficulty Scaling")]
-    [SerializeField] private float minSpawnInterval = 0.35f;
-    [SerializeField] private float difficultyScaleRate = 0.015f;
+    [SerializeField] private float minSpawnInterval = 0.4f;
+    [SerializeField] private float difficultyScaleRate = 0.008f;  // slower initial ramp
 
     [Header("Spawn Precision")]
     [SerializeField] private float minObstacleSpacing = 8f;
 
     [Header("Wave Settings")]
-    [SerializeField] [Range(0f, 1f)] private float doubleSpawnChance = 0.4f;
+    [SerializeField] [Range(0f, 1f)] private float doubleSpawnChanceBase = 0.2f;
+    [SerializeField] [Range(0f, 1f)] private float doubleSpawnChanceMax  = 0.6f;
 
     [Header("Pickup Ratio")]
     [SerializeField] private int obstaclesPerPickup = 3;
@@ -29,8 +30,7 @@ public class ObstacleSpawner : MonoBehaviour
     [SerializeField] private int totalLanes = 3;
 
     [Header("Height")]
-    [SerializeField] private float spawnHeightOffset = -2f;  // offset below the drone player
-
+    [SerializeField] private float spawnHeightOffset = -2f;
 
     private float spawnTimer = 0f;
     private int obstaclesSinceLastPickup = 0;
@@ -53,6 +53,7 @@ public class ObstacleSpawner : MonoBehaviour
     {
         if (playerTransform == null) return;
 
+        // Ramp spawn interval down over time (faster spawns = harder)
         spawnInterval = Mathf.Max(minSpawnInterval, spawnInterval - difficultyScaleRate * Time.deltaTime);
 
         spawnTimer += Time.deltaTime;
@@ -65,6 +66,14 @@ public class ObstacleSpawner : MonoBehaviour
         HandleObstacles();
     }
 
+    private float ScoreBasedDoubleChance()
+    {
+        // Linearly scale double-spawn chance from base to max over 0→2000 score
+        int score = GameManager.Instance != null ? GameManager.Instance.Score : 0;
+        float t = Mathf.Clamp01(score / 2000f);
+        return Mathf.Lerp(doubleSpawnChanceBase, doubleSpawnChanceMax, t);
+    }
+
     private void SpawnWave()
     {
         if (obstaclePrefabs == null || obstaclePrefabs.Length == 0) return;
@@ -72,7 +81,7 @@ public class ObstacleSpawner : MonoBehaviour
         float spawnZ = playerTransform.position.z + spawnDistAhead;
         if (IsZoneOccupied(spawnZ)) return;
 
-        int waveSize = (Random.value < doubleSpawnChance) ? 2 : 1;
+        int waveSize = (Random.value < ScoreBasedDoubleChance()) ? 2 : 1;
 
         List<int> lanes = new List<int> { 0, 1, 2 };
         ShuffleList(lanes);
@@ -82,6 +91,7 @@ public class ObstacleSpawner : MonoBehaviour
 
         for (int i = 0; i < lanes.Count && spawned < waveSize; i++)
         {
+            // Always leave at least one lane free so the player can dodge
             if (totalLanes - spawned <= 1) break;
             if (!SpawnRegistry.TryClaim(lanes[i], spawnZ)) continue;
 
@@ -96,7 +106,6 @@ public class ObstacleSpawner : MonoBehaviour
             }
         }
 
-        // Spawn pickup AFTER all obstacles so CountObstaclesAtZ sees the full wave count
         if (triggerPickup)
             pickupSpawner?.SpawnPickupNow();
     }
@@ -110,7 +119,6 @@ public class ObstacleSpawner : MonoBehaviour
         obs.tag = "Obstacle";
         activeObstacles.Add(obs);
         obstacleSlots[obs] = (lane, spawnZ);
-
     }
 
     private bool IsZoneOccupied(float spawnZ)
@@ -152,8 +160,20 @@ public class ObstacleSpawner : MonoBehaviour
             if (obs == null) continue;
             if (Vector3.Distance(obs.transform.position, position) < radius)
                 return true;
-        }
+    }
         return false;
+    }
+
+    public void SpawnTargetedObstacle(int lane, float zAhead)
+    {
+        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0 || playerTransform == null) return;
+        float xPos = (lane - 1) * laneWidth;
+        float spawnZ = playerTransform.position.z + zAhead;
+        Vector3 spawnPos = new Vector3(xPos, playerTransform.position.y + spawnHeightOffset, spawnZ);
+        GameObject prefab = obstaclePrefabs[Random.Range(0, obstaclePrefabs.Length)];
+        GameObject obs = Instantiate(prefab, spawnPos, Quaternion.identity);
+        obs.tag = "Obstacle";
+        activeObstacles.Add(obs);
     }
 
     private void HandleObstacles()

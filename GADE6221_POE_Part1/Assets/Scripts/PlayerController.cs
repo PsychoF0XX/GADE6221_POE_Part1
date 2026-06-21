@@ -1,4 +1,3 @@
-
 using System.Collections;
 using UnityEngine;
 
@@ -11,14 +10,18 @@ public class PlayerController : MonoBehaviour
 
     [Header("Forward Speed")]
     [SerializeField] private float forwardSpeed = 20f;
-    [SerializeField] private float speedRange = 60f;       // maxSpeed = forwardSpeed + speedRange
-    [SerializeField] private float speedRampRate = 0.4f;   // units/sec added to base speed over time
+    [SerializeField] private float speedRange = 40f;       // maxSpeed = forwardSpeed + speedRange
+    [SerializeField] private float speedRampRate = 0.4f;
+    [SerializeField] private float maxPhysicalSpeed = 55f; // hard cap to prevent phasing through colliders
 
     private float maxSpeed;
 
     [Header("Jump")]
     [SerializeField] private float jumpForce = 6f;
     [SerializeField] private LayerMask groundLayer;
+
+    [Header("Invincibility Flash")]
+    [SerializeField] private float flashInterval = 0.12f;
 
     private Rigidbody rb;
     private int currentLane = 1;          // 0 = left, 1 = centre, 2 = right
@@ -28,6 +31,9 @@ public class PlayerController : MonoBehaviour
     private bool isInvincible = false;
     private float baseSpeed;
     private float currentMultiplier = 1f;
+    private Renderer[] renderers;
+
+    public int CurrentLane => currentLane;
 
     private float LaneToX(int lane) => (lane - 1) * laneWidth;
 
@@ -36,9 +42,14 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         rb.useGravity = false;
+        // Continuous collision detection prevents phasing through thin colliders at high speed
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
         targetX = LaneToX(currentLane);
         baseSpeed = forwardSpeed;
         maxSpeed = forwardSpeed + speedRange;
+
+        renderers = GetComponentsInChildren<Renderer>();
     }
 
     private void Update()
@@ -59,10 +70,9 @@ public class PlayerController : MonoBehaviour
 
     private void RampSpeed()
     {
-        // Always ramp baseSpeed — even during a boost
         baseSpeed = Mathf.Min(baseSpeed + speedRampRate * Time.fixedDeltaTime, maxSpeed);
-        // forwardSpeed always reflects baseSpeed * current multiplier (1x when no boost)
-        forwardSpeed = baseSpeed * currentMultiplier;
+        // Cap effective speed so the player can't phase through colliders or pickups
+        forwardSpeed = Mathf.Min(baseSpeed * currentMultiplier, maxPhysicalSpeed);
     }
 
     private void HandleLaneInput()
@@ -119,23 +129,41 @@ public class PlayerController : MonoBehaviour
         currentMultiplier = 1f;
     }
 
-    // Called by GameManager when all lives are lost
     public void TriggerDeath()
     {
         isDead = true;
+        StopAllCoroutines();
+        SetRenderersVisible(true);
     }
 
-    // Called by GameManager when player takes damage but still has lives remaining
     public void StartInvincibility(float duration)
     {
+        StopAllCoroutines();
         StartCoroutine(InvincibilityRoutine(duration));
     }
 
     private IEnumerator InvincibilityRoutine(float duration)
     {
         isInvincible = true;
-        yield return new WaitForSeconds(duration);
+        float elapsed = 0f;
+        bool visible = true;
+
+        while (elapsed < duration)
+        {
+            visible = !visible;
+            SetRenderersVisible(visible);
+            yield return new WaitForSeconds(flashInterval);
+            elapsed += flashInterval;
+        }
+
         isInvincible = false;
+        SetRenderersVisible(true);
+    }
+
+    private void SetRenderersVisible(bool visible)
+    {
+        foreach (Renderer r in renderers)
+            if (r != null) r.enabled = visible;
     }
 
     private void OnTriggerEnter(Collider other)

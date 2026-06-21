@@ -13,9 +13,29 @@ public class PickupManager : MonoBehaviour
     [SerializeField] private float magnetDuration = 8f;
 
     [Header("Speed Boost")]
-    [SerializeField] private float speedBoostMultiplier = 1.5f;
+    [SerializeField] private float speedBoostMultiplier = 1.3f;
 
-    [Header("HUD (optional)")]
+    // ── Dedicated per-pickup HUD rows ─────────────────────────────────────────
+    // Create one row per pickup in your Canvas (label + Image fill bar).
+    // Set each row inactive by default in the Inspector.
+    [Header("HUD - Speed Boost Row")]
+    [SerializeField] private GameObject speedBoostRow;
+    [SerializeField] private Image speedBoostBar;
+
+    [Header("HUD - Shield Row")]
+    [SerializeField] private GameObject shieldRow;
+    [SerializeField] private Image shieldBar;
+
+    [Header("HUD - Magnet Row")]
+    [SerializeField] private GameObject magnetRow;
+    [SerializeField] private Image magnetBar;
+
+    // ── Instant-pickup flash label (set inactive by default) ─────────────────
+    [Header("Flash Label")]
+    [SerializeField] private TMP_Text flashLabel;
+
+    // ── Legacy single-panel (optional, still wired up if you haven't rebuilt HUD) ──
+    [Header("Legacy Single HUD Panel (optional)")]
     [SerializeField] private GameObject pickupHUDPanel;
     [SerializeField] private TMP_Text pickupLabel;
     [SerializeField] private Image pickupTimerBar;
@@ -23,7 +43,11 @@ public class PickupManager : MonoBehaviour
     public bool IsShieldActive { get; private set; }
     public bool IsMagnetActive { get; private set; }
 
-    // Each pickup type runs its own independent coroutine
+    // Remaining seconds for each timed effect — written by coroutines, extended on stack
+    private float speedBoostRemaining;
+    private float shieldRemaining;
+    private float magnetRemaining;
+
     private Coroutine speedBoostCoroutine;
     private Coroutine shieldCoroutine;
     private Coroutine magnetCoroutine;
@@ -42,115 +66,161 @@ public class PickupManager : MonoBehaviour
         GameObject p = GameObject.FindWithTag("Player");
         if (p != null) player = p.GetComponent<PlayerController>();
 
+        speedBoostRow?.SetActive(false);
+        shieldRow?.SetActive(false);
+        magnetRow?.SetActive(false);
         pickupHUDPanel?.SetActive(false);
+        flashLabel?.gameObject.SetActive(false);
     }
 
     public void ActivatePickup(PickupType type)
     {
-        // Instant pickups — never cancel timed effects
-        if (type == PickupType.Health)
-        {
-            GameManager.Instance?.AddLife();
-            ShowFlash("HEALTH +1");
-            return;
-        }
-        if (type == PickupType.Score)
-        {
-            GameManager.Instance?.AddScore(5);
-            ShowFlash("SCORE +5");
-            return;
-        }
-
-        pickupHUDPanel?.SetActive(true);
-
         switch (type)
         {
+            case PickupType.Health:
+                GameManager.Instance?.AddLife();
+                ShowFlash("HEALTH +1");
+                return;
+
+            case PickupType.Score:
+                GameManager.Instance?.AddScore(5);
+                ShowFlash("SCORE +5");
+                return;
+
             case PickupType.SpeedBoost:
-                if (speedBoostCoroutine != null) { StopCoroutine(speedBoostCoroutine); RemoveSpeedBoost(); }
-                if (pickupLabel != null) pickupLabel.text = "SPEED BOOST";
-                speedBoostCoroutine = StartCoroutine(TimedEffect(
-                    speedBoostDuration, ApplySpeedBoost, RemoveSpeedBoost,
-                    () => speedBoostCoroutine = null));
+                ShowFlash("SPEED BOOST");
+                if (speedBoostCoroutine != null)
+                {
+                    // Stack: extend remaining time (capped at 2× base)
+                    speedBoostRemaining = Mathf.Min(speedBoostRemaining + speedBoostDuration, speedBoostDuration * 2f);
+                }
+                else
+                {
+                    speedBoostRemaining = speedBoostDuration;
+                    player?.SetSpeedMultiplier(speedBoostMultiplier);
+                    speedBoostRow?.SetActive(true);
+                    pickupHUDPanel?.SetActive(true);
+                    if (pickupLabel != null) pickupLabel.text = "SPEED";
+                    speedBoostCoroutine = StartCoroutine(SpeedBoostTick());
+                }
                 break;
 
             case PickupType.Shield:
-                if (shieldCoroutine != null) { StopCoroutine(shieldCoroutine); RemoveShield(); }
-                if (pickupLabel != null) pickupLabel.text = "SHIELD";
-                shieldCoroutine = StartCoroutine(TimedEffect(
-                    shieldDuration, ApplyShield, RemoveShield,
-                    () => shieldCoroutine = null));
+                ShowFlash("SHIELD");
+                if (shieldCoroutine != null)
+                {
+                    shieldRemaining = Mathf.Min(shieldRemaining + shieldDuration, shieldDuration * 2f);
+                }
+                else
+                {
+                    shieldRemaining = shieldDuration;
+                    IsShieldActive = true;
+                    shieldRow?.SetActive(true);
+                    pickupHUDPanel?.SetActive(true);
+                    if (pickupLabel != null) pickupLabel.text = "SHIELD";
+                    shieldCoroutine = StartCoroutine(ShieldTick());
+                }
                 break;
 
             case PickupType.Magnet:
-                if (magnetCoroutine != null) { StopCoroutine(magnetCoroutine); RemoveMagnet(); }
-                if (pickupLabel != null) pickupLabel.text = "MAGNET";
-                magnetCoroutine = StartCoroutine(TimedEffect(
-                    magnetDuration, ApplyMagnet, RemoveMagnet,
-                    () => magnetCoroutine = null));
+                ShowFlash("MAGNET");
+                if (magnetCoroutine != null)
+                {
+                    // Magnet stacks — each extra pickup meaningfully extends range time
+                    magnetRemaining = Mathf.Min(magnetRemaining + magnetDuration, magnetDuration * 3f);
+                }
+                else
+                {
+                    magnetRemaining = magnetDuration;
+                    IsMagnetActive = true;
+                    magnetRow?.SetActive(true);
+                    pickupHUDPanel?.SetActive(true);
+                    if (pickupLabel != null) pickupLabel.text = "MAGNET";
+                    magnetCoroutine = StartCoroutine(MagnetTick());
+                }
                 break;
         }
+    }
+
+    private IEnumerator SpeedBoostTick()
+    {
+        while (speedBoostRemaining > 0f)
+        {
+            speedBoostRemaining -= Time.deltaTime;
+            float fill = Mathf.Clamp01(speedBoostRemaining / speedBoostDuration);
+            if (speedBoostBar != null) speedBoostBar.fillAmount = fill;
+            if (pickupTimerBar != null) pickupTimerBar.fillAmount = fill;
+            yield return null;
+        }
+        player?.ResetSpeed();
+        speedBoostRow?.SetActive(false);
+        speedBoostCoroutine = null;
+        HideLegacyPanelIfIdle();
+    }
+
+    private IEnumerator ShieldTick()
+    {
+        while (shieldRemaining > 0f)
+        {
+            shieldRemaining -= Time.deltaTime;
+            float fill = Mathf.Clamp01(shieldRemaining / shieldDuration);
+            if (shieldBar != null) shieldBar.fillAmount = fill;
+            if (pickupTimerBar != null) pickupTimerBar.fillAmount = fill;
+            yield return null;
+        }
+        IsShieldActive = false;
+        shieldRow?.SetActive(false);
+        shieldCoroutine = null;
+        HideLegacyPanelIfIdle();
+    }
+
+    private IEnumerator MagnetTick()
+    {
+        while (magnetRemaining > 0f)
+        {
+            magnetRemaining -= Time.deltaTime;
+            float fill = Mathf.Clamp01(magnetRemaining / magnetDuration);
+            if (magnetBar != null) magnetBar.fillAmount = fill;
+            if (pickupTimerBar != null) pickupTimerBar.fillAmount = fill;
+            yield return null;
+        }
+        IsMagnetActive = false;
+        magnetRow?.SetActive(false);
+        magnetCoroutine = null;
+        HideLegacyPanelIfIdle();
+    }
+
+    private void HideLegacyPanelIfIdle()
+    {
+        if (speedBoostCoroutine == null && shieldCoroutine == null && magnetCoroutine == null)
+            pickupHUDPanel?.SetActive(false);
     }
 
     private void ShowFlash(string message)
     {
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
-        flashCoroutine = StartCoroutine(FlashLabel(message));
+        flashCoroutine = StartCoroutine(FlashRoutine(message));
     }
 
-    private IEnumerator FlashLabel(string message)
+    private IEnumerator FlashRoutine(string message)
     {
-        bool panelWasActive = pickupHUDPanel != null && pickupHUDPanel.activeSelf;
-        string previousLabel = pickupLabel != null ? pickupLabel.text : "";
-
-        if (pickupLabel != null) pickupLabel.text = message;
-        if (!panelWasActive)
+        if (flashLabel != null)
         {
-            if (pickupTimerBar != null) pickupTimerBar.fillAmount = 0f;
-            pickupHUDPanel?.SetActive(true);
+            flashLabel.text = message;
+            flashLabel.gameObject.SetActive(true);
+            yield return new WaitForSeconds(1.5f);
+            flashLabel.gameObject.SetActive(false);
         }
-
-        yield return new WaitForSeconds(1.5f);
-
-        if (panelWasActive)
+        else if (pickupLabel != null && pickupHUDPanel != null)
         {
-            if (pickupLabel != null) pickupLabel.text = previousLabel;
+            bool wasActive = pickupHUDPanel.activeSelf;
+            string prev = pickupLabel.text;
+            pickupLabel.text = message;
+            if (!wasActive) { if (pickupTimerBar != null) pickupTimerBar.fillAmount = 0f; pickupHUDPanel.SetActive(true); }
+            yield return new WaitForSeconds(1.5f);
+            if (wasActive) pickupLabel.text = prev;
+            else pickupHUDPanel.SetActive(false);
         }
-        else
-        {
-            pickupHUDPanel?.SetActive(false);
-        }
-
         flashCoroutine = null;
     }
-
-    private IEnumerator TimedEffect(float duration, System.Action onActivate,
-                                    System.Action onDeactivate, System.Action onComplete)
-    {
-        onActivate?.Invoke();
-
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            if (pickupTimerBar != null)
-                pickupTimerBar.fillAmount = 1f - (elapsed / duration);
-            yield return null;
-        }
-
-        onDeactivate?.Invoke();
-        onComplete?.Invoke();
-
-        // Only hide panel if no other timed effect is still running
-        if (speedBoostCoroutine == null && shieldCoroutine == null && magnetCoroutine == null)
-            pickupHUDPanel?.SetActive(false);
-    }
-
-    private void ApplySpeedBoost() => player?.SetSpeedMultiplier(speedBoostMultiplier);
-    private void RemoveSpeedBoost() => player?.ResetSpeed();
-
-    private void ApplyShield() => IsShieldActive = true;
-    private void RemoveShield() => IsShieldActive = false;
-
-    private void ApplyMagnet() => IsMagnetActive = true;
-    private void RemoveMagnet() => IsMagnetActive = false;
 }

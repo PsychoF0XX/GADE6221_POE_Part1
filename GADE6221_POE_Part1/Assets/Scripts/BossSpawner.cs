@@ -16,6 +16,7 @@ public class BossSpawner : MonoBehaviour
     [SerializeField] private float alertDuration = 4f;
     [SerializeField] private float flashInterval = 0.3f;
 
+    private BossController bossController;
     private PickupSpawner pickupSpawner;
     private bool bossActive = false;
     private bool bossDefeated = false;
@@ -23,7 +24,13 @@ public class BossSpawner : MonoBehaviour
     private void Start()
     {
         pickupSpawner = FindFirstObjectByType<PickupSpawner>();
-        if (droneObject != null) droneObject.SetActive(false);
+
+        if (droneObject != null)
+        {
+            bossController = droneObject.GetComponent<BossController>();
+            droneObject.SetActive(false);
+        }
+
         if (alertText != null) alertText.gameObject.SetActive(false);
     }
 
@@ -42,18 +49,20 @@ public class BossSpawner : MonoBehaviour
     {
         bossActive = true;
         if (droneObject != null) droneObject.SetActive(true);
+        bossController?.Activate();
         if (pickupSpawner != null) pickupSpawner.BossActive = true;
         StartCoroutine(ShowAlert(
-            "DRONE DETECTED!\n<size=75%>1 in 5 obstacles is now POISONED!\nSurvive to 1000 points to escape.</size>"));
+            "DRONE DETECTED!\n<size=75%>Dodge its attacks & beware POISONED pickups!\nReach 1000 points to escape.</size>"));
     }
 
     private void DeactivateBoss()
     {
         bossActive = false;
         bossDefeated = true;
+        bossController?.Deactivate();
         if (droneObject != null) droneObject.SetActive(false);
         if (pickupSpawner != null) pickupSpawner.BossActive = false;
-        StartCoroutine(ShowAlert("<size=90%>Drone lost! Good escape!</size>"));
+        StartCoroutine(ShowAlert("<size=90%>Drone lost! You escaped!</size>"));
     }
 
     private IEnumerator ShowAlert(string message)

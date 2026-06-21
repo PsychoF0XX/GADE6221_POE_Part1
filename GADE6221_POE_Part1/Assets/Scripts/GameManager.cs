@@ -13,6 +13,8 @@ public class GameManager : MonoBehaviour
     [Header("Death Screen (set panel inactive by default)")]
     [SerializeField] private GameObject deathPanel;
     [SerializeField] private TMP_Text deathScoreText;
+    [SerializeField] private TMP_Text deathHighScoreText;
+    [SerializeField] private TMP_Text newHighScoreLabel;   // "NEW BEST!" label, optional
 
     [Header("Pause Menu (set panel inactive by default)")]
     [SerializeField] private GameObject pausePanel;
@@ -21,8 +23,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int maxLives = 3;
     [SerializeField] private float invincibilityDuration = 2f;
 
-    [Header("Scene")]
-    [SerializeField] private string gameSceneName = "GameScene";
+    [Header("Scenes")]
+    [SerializeField] private string gameSceneName = "EndlessRunner";
+    [SerializeField] private string mainMenuSceneName = "MainMenu";
 
     public int Score => score;
 
@@ -43,6 +46,7 @@ public class GameManager : MonoBehaviour
         lives = maxLives;
         deathPanel?.SetActive(false);
         pausePanel?.SetActive(false);
+        newHighScoreLabel?.gameObject.SetActive(false);
 
         GameObject p = GameObject.FindWithTag("Player");
         if (p != null) playerController = p.GetComponent<PlayerController>();
@@ -78,17 +82,11 @@ public class GameManager : MonoBehaviour
         CameraShake.Instance?.Shake();
 
         if (lives <= 0)
-        {
             TriggerGameOver();
-        }
         else
-        {
-            // Grant brief invincibility so the player can recover
             playerController?.StartInvincibility(invincibilityDuration);
-        }
     }
 
-    // Legacy support
     public void OnPlayerDied() => TakeDamage();
 
     private void TriggerGameOver()
@@ -97,9 +95,18 @@ public class GameManager : MonoBehaviour
         playerController?.TriggerDeath();
         Time.timeScale = 0f;
 
+        bool isNewBest = HighScoreManager.Instance != null && HighScoreManager.Instance.TrySetHighScore(score);
+
         if (deathScoreText != null)
             deathScoreText.text = "Score: " + score;
 
+        if (deathHighScoreText != null)
+        {
+            int best = HighScoreManager.Instance != null ? HighScoreManager.Instance.HighScore : score;
+            deathHighScoreText.text = "Best: " + best;
+        }
+
+        newHighScoreLabel?.gameObject.SetActive(isNewBest);
         deathPanel?.SetActive(true);
     }
 
@@ -129,6 +136,12 @@ public class GameManager : MonoBehaviour
         isPaused = false;
         Time.timeScale = 1f;
         pausePanel?.SetActive(false);
+    }
+
+    public void OnMainMenuClicked()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(mainMenuSceneName);
     }
 
     public void OnQuitClicked() => Application.Quit();
