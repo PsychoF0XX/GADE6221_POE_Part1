@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TMP_Text deathScoreText;
     [SerializeField] private TMP_Text deathHighScoreText;
     [SerializeField] private TMP_Text newHighScoreLabel;   // "NEW BEST!" label, optional
+    [SerializeField] private PlayerNameInput playerNameInput; // shows name prompt before death panel
 
     [Header("Pause Menu (set panel inactive by default)")]
     [SerializeField] private GameObject pausePanel;
@@ -140,7 +141,12 @@ public class GameManager : MonoBehaviour
         }
 
         newHighScoreLabel?.gameObject.SetActive(isNewBest);
-        deathPanel?.SetActive(true);
+
+        // If name input is set up, show it first — it will reveal the death panel after submit
+        if (playerNameInput != null)
+            playerNameInput.ShowNameInput(score);
+        else
+            deathPanel?.SetActive(true);
     }
 
     private void RefreshHUD()
