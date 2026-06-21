@@ -164,18 +164,6 @@ public class ObstacleSpawner : MonoBehaviour
         return false;
     }
 
-    public void SpawnTargetedObstacle(int lane, float zAhead)
-    {
-        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0 || playerTransform == null) return;
-        float xPos = (lane - 1) * laneWidth;
-        float spawnZ = playerTransform.position.z + zAhead;
-        Vector3 spawnPos = new Vector3(xPos, playerTransform.position.y + spawnHeightOffset, spawnZ);
-        GameObject prefab = obstaclePrefabs[Random.Range(0, obstaclePrefabs.Length)];
-        GameObject obs = Instantiate(prefab, spawnPos, Quaternion.identity);
-        obs.tag = "Obstacle";
-        activeObstacles.Add(obs);
-    }
-
     private void HandleObstacles()
     {
         float playerZ = playerTransform.position.z;

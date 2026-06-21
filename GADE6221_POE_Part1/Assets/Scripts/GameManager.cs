@@ -60,7 +60,6 @@ public class GameManager : MonoBehaviour
             EventManager.Instance.OnBossSpawned     += _ => { };   // hooked — extend later
             EventManager.Instance.OnBossBeaten      += _ => AddScore(50);
             EventManager.Instance.OnLevelCompleted  += OnLevelCompleted;
-            EventManager.Instance.OnPlayerDied      += TakeDamage;
         }
 
         RefreshHUD();
@@ -74,7 +73,6 @@ public class GameManager : MonoBehaviour
             EventManager.Instance.OnPickupActivated -= _ => AddScore(2);
             EventManager.Instance.OnBossBeaten      -= _ => AddScore(50);
             EventManager.Instance.OnLevelCompleted  -= OnLevelCompleted;
-            EventManager.Instance.OnPlayerDied      -= TakeDamage;
         }
     }
 
@@ -110,7 +108,7 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         lives--;
         RefreshHUD();
-        CameraShake.Instance?.Shake();
+        EventManager.Instance?.RaisePlayerDied();
 
         if (lives <= 0)
             TriggerGameOver();

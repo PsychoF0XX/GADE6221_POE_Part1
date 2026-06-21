@@ -1,46 +1,62 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
-using MySql.Data.MySqlClient;
+using Mono.Data.Sqlite;
 
+// SQLite DatabaseManager — stores scores.db in Application.persistentDataPath.
+// Works on any machine with no server required.
+// Singleton — add to a GameObject in your Main Menu scene.
 public class DatabaseManager : MonoBehaviour
 {
     public static DatabaseManager Instance { get; private set; }
 
-    [Header("MySQL Connection")]
-    [SerializeField] private string host = "localhost";
-    [SerializeField] private string port = "3306";
-    [SerializeField] private string database = "gade6221";
-    [SerializeField] private string user = "root";
-    [SerializeField] private string password = "";
-
-    private string ConnectionString =>
-        $"server={host};port={port};user={user};password={password};database={database};";
+    private string DbPath => Path.Combine(Application.persistentDataPath, "scores.db");
+    private string ConnectionString => "URI=file:" + DbPath;
 
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        InitialiseDatabase();
     }
 
-    private void Start()
+    private void InitialiseDatabase()
     {
-
+        try
+        {
+            using (var conn = new SqliteConnection(ConnectionString))
+            {
+                conn.Open();
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText =
+                        "CREATE TABLE IF NOT EXISTS scores (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        "player_name TEXT NOT NULL," +
+                        "score INTEGER NOT NULL," +
+                        "date_achieved DATETIME DEFAULT CURRENT_TIMESTAMP);";
+                    cmd.ExecuteNonQuery();
+                }
+                Debug.Log("SQLite database ready at: " + DbPath);
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("SQLite init failed: " + e.Message);
+        }
     }
 
-    
-
-    // Call this when the player submits their name on the game over screen
     public void SaveScore(string playerName, int score)
     {
         try
         {
-            using (var conn = new MySqlConnection(ConnectionString))
+            using (var conn = new SqliteConnection(ConnectionString))
             {
                 conn.Open();
-                string query = "INSERT INTO scores (player_name, score) VALUES (@name, @score)";
-                using (var cmd = new MySqlCommand(query, conn))
+                using (var cmd = conn.CreateCommand())
                 {
+                    cmd.CommandText = "INSERT INTO scores (player_name, score) VALUES (@name, @score)";
                     cmd.Parameters.AddWithValue("@name", playerName);
                     cmd.Parameters.AddWithValue("@score", score);
                     cmd.ExecuteNonQuery();
@@ -50,22 +66,21 @@ public class DatabaseManager : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.LogError("Database error saving score: " + e.Message);
+            Debug.LogError("SQLite error saving score: " + e.Message);
         }
     }
 
-    // Returns the top N scores, highest first
     public List<ScoreEntry> GetTopScores(int limit = 5)
     {
         var results = new List<ScoreEntry>();
         try
         {
-            using (var conn = new MySqlConnection(ConnectionString))
+            using (var conn = new SqliteConnection(ConnectionString))
             {
                 conn.Open();
-                string query = "SELECT player_name, score FROM scores ORDER BY score DESC LIMIT @limit";
-                using (var cmd = new MySqlCommand(query, conn))
+                using (var cmd = conn.CreateCommand())
                 {
+                    cmd.CommandText = "SELECT player_name, score FROM scores ORDER BY score DESC LIMIT @limit";
                     cmd.Parameters.AddWithValue("@limit", limit);
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -73,8 +88,8 @@ public class DatabaseManager : MonoBehaviour
                         {
                             results.Add(new ScoreEntry
                             {
-                                playerName = reader.GetString("player_name"),
-                                score = reader.GetInt32("score")
+                                playerName = reader.GetString(0),
+                                score      = reader.GetInt32(1)
                             });
                         }
                     }
@@ -83,13 +98,12 @@ public class DatabaseManager : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.LogError("Database error getting scores: " + e.Message);
+            Debug.LogError("SQLite error getting scores: " + e.Message);
         }
         return results;
     }
 }
 
-// Simple data container for a leaderboard row
 public class ScoreEntry
 {
     public string playerName;

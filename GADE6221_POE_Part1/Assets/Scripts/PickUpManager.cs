@@ -79,11 +79,13 @@ public class PickupManager : MonoBehaviour
         {
             case PickupType.Health:
                 GameManager.Instance?.AddLife();
+                EventManager.Instance?.RaisePickupActivated(PickupType.Health);
                 ShowFlash("HEALTH +1");
                 return;
 
             case PickupType.Score:
                 GameManager.Instance?.AddScore(5);
+                EventManager.Instance?.RaisePickupActivated(PickupType.Score);
                 ShowFlash("SCORE +5");
                 return;
 
