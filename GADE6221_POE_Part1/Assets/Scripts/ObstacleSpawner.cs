@@ -164,6 +164,15 @@ public class ObstacleSpawner : MonoBehaviour
         return false;
     }
 
+    // Called by BossController in Level 2 to drop a car in a specific lane
+    public void SpawnBossObstacle(int lane, float distAhead)
+    {
+        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0 || playerTransform == null) return;
+        float spawnZ = playerTransform.position.z + distAhead;
+        if (!SpawnRegistry.TryClaim(lane, spawnZ)) return; // lane already occupied
+        SpawnObstacleAt(lane, spawnZ);
+    }
+
     private void HandleObstacles()
     {
         float playerZ = playerTransform.position.z;

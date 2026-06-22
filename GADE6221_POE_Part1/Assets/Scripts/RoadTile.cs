@@ -1,15 +1,24 @@
 using UnityEngine;
 
-// Attach to the root empty parent of every road prefab.
-// Measures length and pivot offset from the renderer bounds — no collider needed.
+// Attach to the root of every road prefab.
+// If the mesh pivot is offset, set lengthOverride manually in the Inspector.
 public class RoadTile : MonoBehaviour
 {
+    [Tooltip("Leave at 0 to auto-detect from renderer bounds. Set manually if the prefab pivot is offset.")]
+    [SerializeField] private float lengthOverride = 0f;
+
     public float length { get; private set; }
     public float startOffset { get; private set; }
 
     private void Awake()
     {
-        // Encapsulate all child renderers into one combined bounds
+        if (lengthOverride > 0f)
+        {
+            length = lengthOverride;
+            startOffset = 0f;
+            return;
+        }
+
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
         if (renderers.Length > 0)
         {

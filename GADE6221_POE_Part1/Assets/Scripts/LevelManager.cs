@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Manages infinite terrain spawning across two distinct level types.
-// Level 1 prefabs and Level 2 prefabs are assigned separately in the Inspector.
-// The game always starts Level 1 → Level 2, then randomises from there.
+// Score-based level switching.
+// 0-999: Level 1 prefabs. 1000-1999: Level 2 prefabs. Loops every 2000 score.
 public class LevelManager : MonoBehaviour
 {
     [Header("Level 1 Section Prefabs")]
@@ -19,17 +18,16 @@ public class LevelManager : MonoBehaviour
     [Header("Destroy Settings")]
     [SerializeField] private float destroyBufferBehind = 20f;
 
-    [Header("Level Length")]
-    [SerializeField] private int sectionsPerLevel = 10;   // how many sections before switching levels
+    [Header("Score Thresholds")]
+    [SerializeField] private int level2StartScore = 1000;   // score at which Level 2 begins each cycle
+    [SerializeField] private int cycleLength = 2000;        // total score before looping back to Level 1
 
     private Transform playerTransform;
     private float nextSpawnZ;
     private List<GameObject> activeSections = new List<GameObject>();
     private Dictionary<GameObject, float> sectionEndZs = new Dictionary<GameObject, float>();
 
-    private int currentLevel = 1;           // 1 or 2
-    private int sectionsSpawnedThisLevel = 0;
-    private bool pastInitialTwo = false;    // true once both level 1 and level 2 have run once
+    private int currentLevel = 1;
 
     private void Start()
     {
@@ -45,6 +43,16 @@ public class LevelManager : MonoBehaviour
     private void Update()
     {
         if (playerTransform == null) return;
+
+        int score = GameManager.Instance != null ? GameManager.Instance.Score : 0;
+        int cycleScore = score % cycleLength;
+        int newLevel = cycleScore < level2StartScore ? 1 : 2;
+
+        if (newLevel != currentLevel)
+        {
+            currentLevel = newLevel;
+            EventManager.Instance?.RaiseLevelCompleted();
+        }
 
         while (nextSpawnZ < playerTransform.position.z + sectionsAhead * fallbackSectionLength)
             SpawnNextSection();
@@ -65,42 +73,9 @@ public class LevelManager : MonoBehaviour
         float spawnZ = tile != null ? nextSpawnZ - tile.startOffset : nextSpawnZ;
         section.transform.position = new Vector3(0f, 0f, spawnZ);
 
-        float meshEndZ = nextSpawnZ + length;
-        sectionEndZs[section] = meshEndZ;
+        sectionEndZs[section] = nextSpawnZ + length;
         activeSections.Add(section);
         nextSpawnZ += length;
-
-        sectionsSpawnedThisLevel++;
-        if (sectionsSpawnedThisLevel >= sectionsPerLevel)
-            AdvanceLevel();
-    }
-
-    private void AdvanceLevel()
-    {
-        sectionsSpawnedThisLevel = 0;
-
-        if (!pastInitialTwo)
-        {
-            // First pass: always go 1 → 2
-            if (currentLevel == 1)
-            {
-                currentLevel = 2;
-            }
-            else
-            {
-                // Finished level 2 for the first time — now randomise
-                pastInitialTwo = true;
-                currentLevel = Random.Range(0, 2) == 0 ? 1 : 2;
-            }
-        }
-        else
-        {
-            // Random pick after the initial two levels
-            currentLevel = Random.Range(0, 2) == 0 ? 1 : 2;
-        }
-
-        // Fire the event so GameManager can track levels beaten
-        EventManager.Instance?.RaiseLevelCompleted();
     }
 
     private void DestroyOldSections()
